@@ -25,10 +25,10 @@
       "category": "Pilots",
       "description": "Project EMPORION online pilot.",
       "file": "project-emporion.html",
-      "v": 2,
+      "v": 3,
       "hidden": false,
       "addedAt": "2026-11-18T09:30:00.000Z",
-      "updatedAt": "2026-11-18T02:49:43.679Z"
+      "updatedAt": "2026-11-18T03:28:12.718Z"
     },
     {
       "id": "app-usecase",
@@ -43,5 +43,5 @@
       "updatedAt": "2026-11-18T09:30:00.000Z"
     }
   ],
-  "updatedAt": "2026-11-18T03:27:45.232Z"
+  "updatedAt": "2026-11-18T03:28:12.719Z"
 }
