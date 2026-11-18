@@ -1,0 +1,47 @@
+{
+  "version": 2,
+  "portalTitle": "AI Portal",
+  "portalSubtitle": "Timex Group Philippines · Supply Chain AI Programs",
+  "allowedDomains": [
+    "timex.com",
+    "timexgroup.com"
+  ],
+  "github": {
+    "owner": "laliagaTimex",
+    "repo": "timex-ai-portal",
+    "branch": "main"
+  },
+  "data": {
+    "owner": "laliagaTimex",
+    "repo": "ai-portal-data",
+    "branch": "main",
+    "key": "x1.YnhXSlRPb3dZRkNWSFBSWElUakZ3T2tudXVhN3c2SlNUenREcG9jYXlKN2FmQkl5Vm9XSWZqOW92MHRfTE5JaDNlc3ZuSHNUMFFLWEI3UEMxMV90YXBfYnVodGln"
+  },
+  "apps": [
+    {
+      "id": "app-usecase",
+      "name": "AI Use Case Report",
+      "icon": "📊",
+      "category": "Supply Chain AI",
+      "description": "Master tracker report: overview, cross-pollination, benefits & savings, and status summary by champion.",
+      "file": "ai-use-case-report.html",
+      "v": 1,
+      "hidden": false,
+      "addedAt": "2026-11-18T09:30:00.000Z",
+      "updatedAt": "2026-11-18T09:30:00.000Z"
+    },
+    {
+      "id": "app-emporion",
+      "name": "Project EMPORION",
+      "icon": "🏛️",
+      "category": "Pilots",
+      "description": "Project EMPORION online pilot.",
+      "file": "project-emporion.html",
+      "v": 1,
+      "hidden": false,
+      "addedAt": "2026-11-18T09:30:00.000Z",
+      "updatedAt": "2026-11-18T09:30:00.000Z"
+    }
+  ],
+  "updatedAt": "2026-11-18T02:05:18.383Z"
+}

@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Timex AI Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f5f4f0;--ink:#1a1a18;--muted:#888;--line:#e8e6e0;--accent:#6c5af5;--side:272px}
+html,body{height:100%}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;overflow:hidden}
+button{font-family:inherit}
+.app{display:grid;grid-template-columns:var(--side) 1fr;height:100vh;transition:grid-template-columns .2s}
+.app.collapsed{grid-template-columns:64px 1fr}
+.app.locked{filter:blur(6px);pointer-events:none;user-select:none}
+
+/* Sidebar */
+.side{background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.brand{padding:20px 20px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.brand img{height:26px;width:auto;align-self:flex-start;max-width:100%}
+.brand-sub{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.brand-mini{display:none;font-weight:700;font-size:15px;text-align:center}
+.collapsed .brand img,.collapsed .brand-sub{display:none}
+.collapsed .brand-mini{display:block}
+.side-search{padding:12px 14px 4px}
+.side-search input{width:100%;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#faf9f6;font-size:12px;font-family:inherit;outline:none}
+.side-search input:focus{border-color:#bbb;background:#fff}
+.collapsed .side-search{display:none}
+.nav{flex:1;overflow-y:auto;padding:8px 10px 12px}
+.nav-group{font-size:9px;text-transform:uppercase;letter-spacing:.14em;color:#aaa;font-weight:600;padding:14px 10px 6px}
+.collapsed .nav-group{text-align:center;padding:10px 0 4px;font-size:0}
+.collapsed .nav-group::after{content:'·';font-size:14px}
+.nav-item{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:10px;border:none;background:none;cursor:pointer;text-align:left;color:#333;font-size:13px;transition:background .12s}
+.nav-item:hover{background:#f5f4f0}
+.nav-item.active{background:var(--ink);color:#fff}
+.nav-item.active .nav-desc{color:rgba(255,255,255,.5)}
+.nav-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;background:#f5f4f0}
+.nav-item.active .nav-ico{background:rgba(255,255,255,.12)}
+.nav-txt{min-width:0;flex:1}
+.nav-name{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-desc{font-size:10px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-badge{font-size:10px;font-weight:600;background:#f0eeff;color:#6c5af5;border-radius:10px;padding:1px 7px}
+.nav-item.active .nav-badge{background:rgba(255,255,255,.15);color:#fff}
+.nav-dot{width:6px;height:6px;border-radius:50%;background:#1d9e75;flex-shrink:0}
+.collapsed .nav-txt,.collapsed .nav-dot,.collapsed .nav-badge{display:none}
+.collapsed .nav-item{justify-content:center;padding:8px 0}
+.nav-empty{font-size:12px;color:#bbb;padding:12px 10px;font-style:italic}
+.side-foot{border-top:1px solid var(--line);padding:10px;display:flex;flex-direction:column;gap:4px}
+.user-pill{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;background:#faf9f6;font-size:11px;overflow:hidden}
+.uav{width:26px;height:26px;border-radius:50%;background:#6366f1;color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.user-pill .em{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#333;font-weight:500}
+.user-pill button{border:none;background:none;color:#999;cursor:pointer;font-size:11px}
+.user-pill button:hover{color:var(--ink)}
+.collapsed .user-pill .em,.collapsed .user-pill button{display:none}
+.collapsed .user-pill{justify-content:center}
+
+/* Main */
+.main{display:flex;flex-direction:column;min-width:0;height:100vh}
+.topbar{height:56px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:0 18px;flex-shrink:0}
+.icon-btn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;color:#555;flex-shrink:0}
+.icon-btn:hover{background:#f5f4f0;color:var(--ink)}
+.crumb{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+.crumb-ico{font-size:18px}
+.crumb-title{font-size:15px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crumb-sub{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top-actions{display:flex;gap:6px}
+.view{flex:1;min-height:0;position:relative}
+.view-pane{position:absolute;inset:0;overflow:auto;display:none}
+.view-pane.show{display:block}
+.frame-host{position:absolute;inset:0;display:none;background:#fff}
+.frame-host.show{display:block}
+.frame-host iframe{position:absolute;inset:0;width:100%;height:100%;border:none;display:none;background:#fff}
+.frame-host iframe.show{display:block}
+.loader{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;background:rgba(245,244,240,.85);z-index:5;font-size:12px;color:#888}
+.loader.show{display:flex}
+.spin{width:28px;height:28px;border:3px solid #e0ddd8;border-top-color:var(--ink);border-radius:50%;animation:sp .8s linear infinite}
+.spin.sm{width:16px;height:16px;border-width:2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* Pages */
+.wrap{max-width:1180px;margin:0 auto;padding:28px 28px 48px}
+.hero{background:var(--ink);color:#fff;border-radius:16px;padding:28px 32px;position:relative;overflow:hidden;margin-bottom:24px}
+.hero::before{content:'';position:absolute;right:-50px;top:-50px;width:240px;height:240px;border-radius:50%;border:1px solid rgba(255,255,255,.08)}
+.hero.lib{background:linear-gradient(135deg,#1e1b4b,#312e81 60%,#4338ca)}
+.hero.ana{background:linear-gradient(135deg,#064e3b,#065f46 50%,#047857)}
+.hero-label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.45);margin-bottom:6px}
+.hero-title{font-size:26px;font-weight:600;letter-spacing:-.02em;margin-bottom:4px}
+.hero-sub{font-size:13px;color:rgba(255,255,255,.6);max-width:680px}
+.hero-stats{display:flex;gap:28px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.12);flex-wrap:wrap}
+.hs-num{font-size:22px;font-weight:600}
+.hs-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.45)}
+.sec-title{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#555;margin:6px 0 14px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px;margin-bottom:28px}
+.app-card{background:#fff;border:1px solid rgba(0,0,0,.07);border-radius:14px;padding:18px 20px;cursor:pointer;transition:all .15s;display:flex;flex-direction:column;gap:10px}
+.app-card:hover{box-shadow:0 6px 22px rgba(0,0,0,.08);transform:translateY(-2px)}
+.ac-head{display:flex;align-items:center;gap:12px}
+.ac-ico{width:44px;height:44px;border-radius:12px;background:#f5f4f0;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.ac-name{font-size:14px;font-weight:600;letter-spacing:-.01em;line-height:1.3}
+.ac-cat{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#aaa;margin-top:2px}
+.ac-desc{font-size:12px;color:#666;line-height:1.55;min-height:36px}
+.ac-foot{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:10px;color:#aaa;border-top:1px solid #f3f2ef;padding-top:10px}
+.ac-open{font-size:11px;font-weight:600;color:var(--ink)}
+.empty-box{background:#fff;border:2px dashed #d0cec7;border-radius:14px;padding:40px;text-align:center;color:#888}
+.empty-box .big{font-size:36px;opacity:.4;margin-bottom:8px}
+
+.btn{padding:8px 18px;border-radius:20px;border:1px solid var(--ink);background:var(--ink);color:#fff;font-size:12px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{opacity:.85}
+.btn.ghost{background:#fff;color:#333;border-color:#d8d6d0}
+.btn.ghost:hover{background:#f5f4f0;opacity:1}
+.btn.danger{background:#fff;color:#a32d2d;border-color:#f7c1c1}
+.btn.danger:hover{background:#fcebeb;opacity:1}
+.btn.green{background:#059669;border-color:#059669}
+.btn.sm{padding:5px 12px;font-size:11px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.card{background:#fff;border:1px solid rgba(0,0,0,.07);border-radius:14px;padding:22px 24px;margin-bottom:20px}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.card-t{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#555}
+.card-s{font-size:12px;color:#999;margin-top:2px}
+.form-grid{display:grid;grid-template-columns:90px 1fr 1fr;gap:12px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg.full{grid-column:1/-1}
+.fg label{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:#888;font-weight:600}
+.inp{padding:9px 12px;border-radius:9px;border:1px solid #ddd;font-size:13px;font-family:inherit;outline:none;background:#fff;color:var(--ink);width:100%}
+.inp:focus{border-color:#888}
+textarea.inp{resize:vertical;min-height:60px}
+.inp.emoji{text-align:center;font-size:20px;padding:6px}
+select.inp{cursor:pointer}
+.drop{border:2px dashed #d0cec7;border-radius:10px;padding:18px;text-align:center;color:#888;font-size:12px;cursor:pointer;background:#fafaf7}
+.drop:hover,.drop.over{border-color:var(--ink);background:#f5f4f0}
+.drop b{color:var(--ink)}
+.emoji-row{display:flex;flex-wrap:wrap;gap:4px}
+.emoji-row button{width:30px;height:30px;border-radius:7px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:15px}
+.emoji-row button:hover{background:#f5f4f0}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#888;font-weight:500;background:#f9f8f5;border-bottom:1px solid #eee;white-space:nowrap}
+.tbl td{padding:10px 12px;border-bottom:1px solid #f3f2ef;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:#fafaf8}
+.tbl-wrap{overflow-x:auto;border:1px solid #eee;border-radius:10px}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.mono{font-family:'DM Mono',monospace;font-size:11px;color:#888}
+.row-actions{display:flex;gap:4px;justify-content:flex-end}
+.mini{width:28px;height:28px;border-radius:7px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:12px;display:inline-flex;align-items:center;justify-content:center;color:#555}
+.mini:hover{background:#f5f4f0}
+.mini:disabled{opacity:.35;cursor:default}
+.mini.del:hover{background:#fcebeb;color:#a32d2d;border-color:#f7c1c1}
+.tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:500;background:#f1efe8;color:#5f5e5a;white-space:nowrap}
+.tag.green{background:#eaf3de;color:#3b6d11}.tag.amber{background:#fffbf0;color:#b07010}
+.tag.red{background:#fcebeb;color:#a32d2d}.tag.blue{background:#e6f1fb;color:#185fa5}.tag.purple{background:#f0eeff;color:#5c35c9}
+.note{font-size:11px;color:#999;line-height:1.6}
+.warn-box{background:#fffbf0;border:1px solid #fde68a;color:#92400e;border-radius:10px;padding:12px 14px;font-size:12px;line-height:1.6;margin-bottom:16px}
+.info-box{background:#f8f9ff;border:1px solid #e0e4ff;color:#3d4fc4;border-radius:10px;padding:12px 14px;font-size:12px;line-height:1.6;margin-bottom:16px}
+.steps{padding-left:18px;font-size:12.5px;color:#444;line-height:1.9}
+.steps code,.note code{background:#f5f4f0;padding:1px 5px;border-radius:4px;font-family:'DM Mono',monospace;font-size:11px}
+
+/* KPI & bars */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border:1px solid rgba(0,0,0,.07);border-radius:12px;padding:16px 18px}
+.kpi-l{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:4px}
+.kpi-n{font-size:28px;font-weight:600;letter-spacing:-.03em;line-height:1.1}
+.kpi-s{font-size:11px;color:#aaa;margin-top:2px}
+.bars{display:flex;align-items:flex-end;gap:3px;height:170px;padding-top:10px;border-bottom:1px solid #eee}
+.bar-col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;position:relative;min-width:0}
+.bar{width:100%;max-width:26px;background:#059669;border-radius:3px 3px 0 0;min-height:1px;transition:height .3s}
+.bar-col:hover .bar{background:#047857}
+.bar-tip{position:absolute;bottom:100%;background:var(--ink);color:#fff;font-size:10px;padding:3px 7px;border-radius:5px;white-space:nowrap;display:none;z-index:2;margin-bottom:4px}
+.bar-col:hover .bar-tip{display:block}
+.bar-x{display:flex;gap:3px;margin-top:4px}
+.bar-x span{flex:1;font-size:9px;color:#aaa;text-align:center;overflow:hidden;white-space:nowrap}
+.hbar{height:6px;background:#eef0ee;border-radius:3px;overflow:hidden;min-width:80px}
+.hbar>div{height:100%;background:#059669;border-radius:3px}
+.seg{display:inline-flex;border:1px solid #ddd;border-radius:20px;overflow:hidden}
+.seg button{border:none;background:#fff;padding:6px 14px;font-size:12px;cursor:pointer;color:#555}
+.seg button.on{background:var(--ink);color:#fff}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+/* Gate */
+.gate{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(245,244,240,.75)}
+.gate.show{display:flex}
+.gate-box{background:#fff;border:1px solid var(--line);border-radius:20px;max-width:440px;width:100%;padding:38px 40px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.12)}
+.gate-box img{height:32px;margin-bottom:6px}
+.gate-box h1{font-size:22px;font-weight:600;letter-spacing:-.02em;margin:12px 0 4px}
+.gate-box p{font-size:13px;color:#777;line-height:1.6;margin-bottom:20px}
+.gate-box .inp{text-align:center;font-size:14px;padding:12px}
+.gate-err{color:#a32d2d;font-size:12px;min-height:18px;margin:8px 0}
+.gate-dom{font-size:11px;color:#aaa;margin-top:14px}
+
+/* Modal / toast */
+.modal{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;padding:20px}
+.modal.show{display:flex}
+.modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(3px)}
+.modal-box{position:relative;background:#fff;border-radius:16px;max-width:580px;width:100%;max-height:88vh;overflow:auto;padding:24px 26px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.modal-box h3{font-size:17px;font-weight:600;letter-spacing:-.01em;margin-bottom:6px}
+.modal-box .msg{font-size:13px;color:#666;line-height:1.6;margin-bottom:16px}
+.modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.chk{display:flex;align-items:center;gap:8px;font-size:12px;color:#555;cursor:pointer}
+.toast{position:fixed;bottom:22px;right:22px;z-index:90;background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;font-size:12px;box-shadow:0 8px 24px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .25s;max-width:420px}
+.toast.show{transform:none;opacity:1}
+.toast.bad{background:#a32d2d}
+.busy{position:fixed;inset:0;z-index:85;background:rgba(255,255,255,.55);display:none;align-items:center;justify-content:center;flex-direction:column;gap:10px;font-size:13px;color:#555}
+.busy.show{display:flex}
+@media(max-width:900px){.kpis{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- ═══ EMAIL GATE ═══ -->
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOMAAAAqCAYAAABBaewwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAAFiUAABYlAUlSJPAAAA35SURBVHhe7Zt3dFVFHsf3n12RpvSSAkgHEamhKR2krLsggoC6LIiIoK6C0us5oEDovUMAqYElMUAIIKGIoSWCFJEaIKElVJXqb+93mLm57+WWuU/CueuZzzlz4N2ZezNv7nzn95vfb95fSKFQeAIlRoXCIygxKhQeQYlRofAISowKhUdQYlQoPIISo0LhEZQYFQqPoMSoUHgEJUaFwiMoMSoUHkEX44qVK2nuvHk0b/78gMucuXNp5apVdPfuXf7UDH7//Xdat24dazNr9mw6dOgQr3Hm4MGDtGDBQlq0aDFFRUfTw4cPeY01ly5fpsWLI1hZuXIV3b59m9fYcy0tjRYuWhTQWDz+Xof5k3xJT09nbfBclCVLl9KtW7d4rTlHjx6l2XPmsPtmzppF38TE8Bp5kpOT6evly6lfv/70Xvf36f0eH9CwYcPZu7h85QpvJcdlbUwjI9ey8fQvUVHRtG/ffrqefp23DpyLFy/SqtVraODAQazPPT7oSSNGjqQNGzZQWlo6byXHuXPnKDZ2M92/f59fkePkyZMUF7dFaq4dOXKUVq1a7TMe+LwpNpYOHz5Mv/zyC29pjy7GEiVL0V+fyfaHS+my5bQBS+NPzeDBgwdUtVp1vd2EiZN4jTNdu72n3/dcnry0f/8BXmPNiBEj9Xty5MpN+/bv5zX2JCYmUq7nntfvdVvGT5jIn+TLo0eP2KQytsVks+LSpctUtXoNvW3O3M/R+vVRvNaZk6dOsXErUjSIylesSO3at6eeH/ai7u/3oJatWlNo8RIUFBxC/QcMoCuSoty4cSPrS8VKlbS+Vacq1aqx8nLVqlSuQkUKDi1GJV4oSR/26s1E4Jbk8+dZH9GvMuXKU5s33qAPen7I+tyiVSsqpvW5eIkXaPjwEXTj5g1+lz1YwItrfcJi6IbJU6Zo4/Yi3blzh1+xZsDAgfS3bM/q44FSuUpVKlWmLPsuZbXvMmDQIGYg7NDFWKt2HSqsvbigkFCfggEuUKiwPilQChYuwq77ty1UpCjVrlOXrl/PvDpihalRM0x/xsRJk3mNPbCor7xa3+fv9/7oY15rzrVr16hs+Qo+9yxfvoLX2pOUlES5n8/jc6+bYrfIwBI2bNRYb/tsjpzM0vgD4b77ry4+zw0PD+e1znwTs4GJEOO2OS6OfvvtN16TASbn4ogINmGwgB48mMhrrIFlKlCwELO2AO8UBQvtr7/+ysQEi1C9Zk0m9gMHDrJ2MmzevJlCQotT7bp1mQdgZk2uXUtjXkUxTZCY7LA6TkRELKEXSpU2nZN2TJk6VVt0XpKyan0//5zqN2jI/o93J8YE3tiJEyeYx1ROm4+Ykz/8YO0R6mK8qk1gKNe/pGtfIir6G8qWPYc+gbZs3UZp2ss0a4/noEP+BCpGPA+DL+5DwWpz9uxZ3iIzcGmN7VEGDR7Ma+0xivH5vPmYy7p12zaK1SaLU9m4aZNtvwBcT+P3wWp/7NgxXvsYrMqiHqXzO++w8ZMBrhH6/UW/fnTv3j1+1ZqrV66yVVtm2wAxFtQWZriRdmACw/rWqVvPdMviz5atWymP1uc+fftKtU9JTaVmzV9j3txPP/3Er5rztMTYoGEj/smcdM19b9y0mbZQhVlumaQCOLt272YixMTAv0lJP/AaeQIVIyaJmds4+suveAtfMAFfrd8gU3u4PDIYxZhfswI///wzr3lyRK5dS9lz5tL71rBxE90d2h4fT3nz5dfrqtWoyRY5GS6mpLAJClcvK5AVI8BWAluKnbt28SvmXLp0iVnnXr0/4lfkgJGoVacONW7S1FbAXhEjOHLkiLZQ5qW16/7Lr/giJUYMqNEyyrg0/gQqRuyTxD3GUuHFSnTjRuZ9A9wd+O/+7eHWyPj/RjHmK1CQuRlZweAhQ336169/fzYx0U9xDduBhIQEfocz/QcMZHsteBNZgRsxwg2GCOAK2zF4yBDLOIMTe/Z8z+IBCFBZ4SUxwnWtWasWDRk6lF/xxfNiHDN2nH5PiLZPxWorPkcsWcJbZdChY0e9HvvYPNzKwMqdPnOGt7LG3zJmlRixj3v9n230vuJ7VTEEuFDmL1jAWzuDyQ+rGD5+PL/y5HEjRljzoJAQWqt5AVZgDw2riHccKG3btaOmzZrzT5nxkhixfcM+HgEfMzwvRmMk9ZP/fEpvtm+vf8YAGPdFcJ+F+FBGjf6SwmrV1j/HbdnCW1pjFCOeFRcXR6dPn2aitCrYt5w/f54Fm9xwRttfIgop+mcsH3/yCW8lR/yOHZQvf0HmCmUVbsQ4Y+YsKhwUxII6ViTs3cu8j8TEJH7FPUgRIViVqnkVZnhJjNhGFAkKZn0yw9NixD2IUol7kG/bwMPrKHBHETgRIAAg6hAkwQtq07atfm3qtGm8pTVGMeL5+D8CInYFY9L8tRbMDXELghf+e2JEXGUmgZEFCxcyy2jmugtu377D8nQIJviXGzdusvG2A2IspLnOqamp/EpmkM9D0AuWfuw4+wgwctJFg4NZlDRQkIrC37Kak14S42d9+rB3ZJXf9bQY8ZJKagMp7oFlw4RHREpcg1sKUrRVB5FJcR3CBBgocU0msGEUo5sC98NtYhlER0ezfY/xWYhCBjJ5EDo3S2MAWO23OnVi6SekHYwlpFhxtgc/fvw4b20O8oyY+LNmz6HVq9foCe41ayJZPq9P389ZzrFg4cI0fsIE06i6ESyuWDRlD2SYgQAbrCuCjGbg0MfTECMWUDMwXxGEREQcC/f69et5TWY8LUbkkYTVwBcRkU0MlHgOrmMSzZg5U7+GCSPyOXjh4nqjxk0cXUmjGPGcmdpzo6Ki2IkVqxIZGUnx8fGu3VT0G0ly/K1nns3uE2HFyRM3wBphYsPKWbF33z6K0awbUjCiYIGDx5A3fwFtzOyj5LGxsaxvlatUoRphYSyfiIAExIf50faNdjR5ylTH9I4AUeVCRWBpzV1MGXA6CxFKq74vXbqMWSO3SX+MCRYoGTHi4ASCbTjUgRNOKN3e6872s4iGI3/fpGkzFnCyw9NiNEZSsbcSqxt8b5yqEHUYhDr16umf27XvwNoB7KXEddzjFGn0D+BkRWoDIHiBwIPo2yv16zOXyuiyTps+nbd2BikR7HHdHDMUwNVDMt9JjHBT0e7MmTPsfSKlgAUIrjbEjOS2G7DHx2K6Y+dOfsU9COLBulu9VxzTgyssmx4SjBkzlgXUZPKeECM8DhxGwekjFPwfuW0E4X788UfHLQDwtBjHhYfr7f0jZkgFiDr0zZjOwL5SgOALVm5cx0R3ChYYxZiVqQ3sH0R/YYHFhDS61RAXFhMZcKYWk/IrbRK5BdYlv/ZdZcRoFcDBGVqMG6ytLHCpK1V+mQXmAgX54zaaRbYiMSmRCR7nZt3w767d2MEFGezcVDd4Woxw1UR7/6QwVhtj5FSUuvVe8VnNcEwLL1zUY69jx9MQY8SSpcwtFX0aNWo0r3mcosCRMFGHvl+QiF6CTz/rQ6VKl5E+ayp4EmIE+PvBoaHslJEsOD4ID8TNPQLsE7GQoV9WwANB7tXNInXr1m22/x4rmXKRDeA44Vkxwv2p3zAjkoojYv507NRZrxcFvwrxxxhRxel/O4xixJlcnN5/khw4cICFt0V/mrdoyRYMI7u/+85noYHbLRMcOnvuHAWHhLL9ipv9qxAjvrsdTmLE92jRshWF1a4tncSHWGqG1WKWBf+XBRFJHKTv8NbjAJ4dAwcNcnWwYOHCRdq7LyT97v/0YkQkFRtv0R5nLv1B8MHonmLAr1y9ymsz+KJfhkv7pmE/aYZRjHBvsHLjhAfyWU5l0eLFzC22ApPBuLeFKK1+cmU87IBitJ52INiEX3hg3yITpcSpn3e7dGF7nlM2fQdOYgSow68dOr39tnSqB2OAHx7gvOmFCxf4VWtOaPt4CB4ixs+6nECKC9YRfbKKNgu+T0hgQsSvfmT504sRkVQhClgJMzcG1qJBo0b6M4cOG8ZrfJk/f4HeBqupXYTMKMZAytJly/iTfIGl6t6jh09bu4AHJk3L1n/X20JgSIPIgF9t4DA9XFwEOFJSUn0sJdx4jC+8BJxqQqDiuz17eK01ECMCOHZiBEjmw6sY7uCFGMG2Aykr9Bv5SSwMmDMCvGscqMc7RuSy9ev/0PqRwmud2bt3H0t9IW2Ehf3mzZu85vHcPJeczFxZBKKwPZI5ZC9AGu3/WoyTJmd2O40gHyPawuJZJbNx9hFt8PKtTvAjOCIsKF4kTr5YkVViRGTU2K5j586OriRO08DtFPcg5+r0KwVBcvJ5NkmQOsGxQFiSFq1as0AY8mcIt+N9IPAim+dDnhFicRIjgDeBRXSdxaFoM+CmTpg4kV58qTIV1bwG/C4QbjwOVGBhgSeBn/otW/Z1QDldHIfs2rUbezZyj4hgwxpXq1GDPfsl7W8g+mlcBGRAMNHuSJ4sUmKEEHbs2Enbt8ezfwNJ0mLiYb/07bfbWXFa1fAzGdEWexqriYvD3+gTFgirNrCEO3fu0vtvtzfBdxNt4+N3uCroK34U7A/6hRwf6tEOz75q4k6bAY9A3IcUAlZwNyAghIgsfgeIcD3cbiTq8et0txMa1gQLhMx9SPij74HsubH3RPQTbj+CKOHjJ9DyFSuY9QxEhP7AFY6JiaHpM2Yw8WNBT0jYK5VTNAOptlOnTvFPgSMlRoVCkfUoMSoUHkGJUaHwCEqMCoVHUGJUKDyCEqNC4RGUGBUKj6DEqFB4BCVGhcIjKDEqFB5BiVGh8AhKjAqFJyD6H9OwlwLqmby7AAAAAElFTkSuQmCC" alt="Timex Group">
+    <h1 id="gateTitle">AI Portal</h1>
+    <p>Enter your company email to continue. Each visit is recorded for portal usage statistics.</p>
+    <input class="inp" id="gateEmail" type="email" placeholder="name@timex.com" autocomplete="email" onkeydown="if(event.key==='Enter')enterPortal()">
+    <div class="gate-err" id="gateErr"></div>
+    <button class="btn" style="width:100%;justify-content:center;padding:11px" onclick="enterPortal()">Continue →</button>
+    <div class="gate-dom" id="gateDom"></div>
+  </div>
+</div>
+
+<div class="app locked" id="appRoot">
+  <aside class="side">
+    <div class="brand">
+      <img src="data:image/png;base64,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" alt="Timex Group">
+      <div class="brand-sub" id="brandSub">AI Portal</div>
+      <div class="brand-mini">T</div>
+    </div>
+    <div class="side-search"><input id="navSearch" placeholder="🔍  Search apps…" oninput="renderNav()"></div>
+    <nav class="nav" id="nav"></nav>
+    <div class="side-foot">
+      <button class="nav-item" id="navAdmin" onclick="go('admin')"><span class="nav-ico">⚙️</span><span class="nav-txt"><div class="nav-name">Admin Control</div><div class="nav-desc" id="adminDesc">Publish apps to GitHub</div></span></button>
+      <div class="user-pill"><div class="uav" id="uAv">?</div><span class="em" id="uEmail">—</span><button onclick="signOut()" title="Switch user">Switch</button></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="icon-btn" onclick="document.getElementById('appRoot').classList.toggle('collapsed')" title="Collapse / expand menu">☰</button>
+      <div class="crumb">
+        <span class="crumb-ico" id="crumbIco">🏠</span>
+        <div style="min-width:0"><div class="crumb-title" id="crumbTitle">Home</div><div class="crumb-sub" id="crumbSub"></div></div>
+      </div>
+      <div class="top-actions" id="appActions" style="display:none">
+        <button class="icon-btn" onclick="reloadCurrent()" title="Reload app">↻</button>
+        <button class="icon-btn" onclick="openNewTab()" title="Open in new tab">↗</button>
+        <button class="icon-btn" onclick="fullscreen()" title="Fullscreen">⛶</button>
+        <button class="icon-btn" onclick="closeCurrent()" title="Close app">✕</button>
+      </div>
+    </div>
+    <div class="view">
+      <div class="view-pane show" id="pane-home"></div>
+      <div class="view-pane" id="pane-library"></div>
+      <div class="view-pane" id="pane-analytics"></div>
+      <div class="view-pane" id="pane-admin"></div>
+      <div class="frame-host" id="frameHost"></div>
+      <div class="loader" id="loader"><div class="spin"></div><div id="loaderTxt">Loading…</div></div>
+    </div>
+  </main>
+</div>
+
+<div class="modal" id="modal"><div class="modal-bg" onclick="closeModal()"></div><div class="modal-box" id="modalBox"></div></div>
+<div class="busy" id="busy"><div class="spin"></div><div id="busyTxt">Publishing to GitHub…</div></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="hiddenFile" accept=".html,.htm" style="display:none">
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+   TIMEX AI PORTAL v2 — GitHub Pages edition
+   Portal repo (public, GitHub Pages):  index.html, portal-config.json, apps/*.html
+   Data repo (private):  analytics/YYYY-MM/DD.json · library/<user>/… · submissions.json
+   ════════════════════════════════════════════════════════════════ */
+const LS_ADMIN='txp_admin_v2', LS_LAST='txp_last_email';
+const EMOJIS=['📊','📈','📋','🤖','🧠','🏛️','📦','🚚','🏭','⌚','💰','🔗','🗂️','🧾','📅','🛠️','🔍','✅','🌐','📑'];
+const API='https://api.github.com';
+
+let config=null, user=null, currentId='home', admin=null, lib=null, libLoading=false;
+const frames={};
+let anaDays=30, anaCache=null;
+
+/* ── helpers ── */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(m,bad){const t=$('toast');t.textContent=m;t.className='toast show'+(bad?' bad':'');clearTimeout(t._t);t._t=setTimeout(()=>t.className='toast',3200);}
+function busy(on,txt){$('busy').classList.toggle('show',!!on);if(txt)$('busyTxt').textContent=txt;}
+const slug=s=>String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60)||'item';
+const fmtSize=b=>b==null?'—':b>1048576?(b/1048576).toFixed(1)+' MB':Math.max(1,Math.round(b/1024))+' KB';
+const fmtDate=iso=>iso?new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
+const fmtDT=iso=>iso?new Date(iso).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'—';
+const localDay=d=>d.toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
+const AV=['#6366f1','#0891b2','#059669','#d97706','#dc2626','#7c3aed','#db2777','#0284c7'];
+const avColor=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))%AV.length;return AV[h];};
+const initials=e=>(e.split('@')[0].split(/[._-]/).filter(Boolean).map(w=>w[0]).slice(0,2).join('')||'?').toUpperCase();
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const obf=t=>t?'x1.'+btoa(t.split('').reverse().join('')):'';
+const deobf=k=>{try{return k&&k.startsWith('x1.')?atob(k.slice(3)).split('').reverse().join(''):'';}catch(e){return '';}};
+function stripRuntime(o){return JSON.parse(JSON.stringify(o,(k,v)=>k.startsWith('_')?undefined:v));}
+
+/* ── GitHub API ── */
+async function gh(token,path,opt={}){
+  const headers={'Accept':opt.raw?'application/vnd.github.raw+json':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
+  if(token)headers.Authorization='Bearer '+token;
+  if(opt.body)headers['Content-Type']='application/json';
+  const r=await fetch(API+path,{method:opt.method||'GET',headers,body:opt.body?JSON.stringify(opt.body):undefined,cache:'no-store'});
+  if(opt.allow404&&r.status===404)return null;
+  if(!r.ok){let m='';try{m=(await r.json()).message;}catch(e){}const err=new Error('GitHub '+r.status+(m?': '+m:''));err.status=r.status;throw err;}
+  if(r.status===204)return null;
+  if(opt.raw)return opt.binary?r.arrayBuffer():r.text();
+  return r.json();
+}
+const encPath=p=>p.split('/').map(encodeURIComponent).join('/');
+const base=R=>`/repos/${R.owner}/${R.repo}`;
+function readFile(R,path,ref,binary){return gh(R.token,`${base(R)}/contents/${encPath(path)}?ref=${encodeURIComponent(ref||R.branch)}`,{raw:true,binary,allow404:true});}
+async function listDir(R,path){const r=await gh(R.token,`${base(R)}/contents/${encPath(path)}?ref=${encodeURIComponent(R.branch)}`,{allow404:true});return Array.isArray(r)?r:[];}
+function b64(buf){const b=new Uint8Array(buf);let s='';for(let i=0;i<b.length;i+=0x8000)s+=String.fromCharCode.apply(null,b.subarray(i,i+0x8000));return btoa(s);}
+/* One atomic commit with automatic retry when someone else pushed first.
+   build(read) returns [{path, content: string|ArrayBuffer|null(delete)}] computed from the latest commit. */
+async function commit(R,message,build){
+  for(let attempt=0;attempt<6;attempt++){
+    const ref=await gh(R.token,`${base(R)}/git/ref/heads/${encodeURIComponent(R.branch)}`);
+    const head=ref.object.sha;
+    const c=await gh(R.token,`${base(R)}/git/commits/${head}`);
+    const changes=await build(p=>readFile(R,p,head));
+    if(!changes||!changes.length)return null;
+    const tree=[];
+    for(const ch of changes){
+      if(ch.content===null){tree.push({path:ch.path,mode:'100644',type:'blob',sha:null});continue;}
+      const bin=typeof ch.content!=='string';
+      const blob=await gh(R.token,`${base(R)}/git/blobs`,{method:'POST',body:bin?{content:b64(ch.content),encoding:'base64'}:{content:ch.content,encoding:'utf-8'}});
+      tree.push({path:ch.path,mode:'100644',type:'blob',sha:blob.sha});
+    }
+    const t=await gh(R.token,`${base(R)}/git/trees`,{method:'POST',body:{base_tree:c.tree.sha,tree}});
+    const nc=await gh(R.token,`${base(R)}/git/commits`,{method:'POST',body:{message,tree:t.sha,parents:[head]}});
+    try{await gh(R.token,`${base(R)}/git/refs/heads/${encodeURIComponent(R.branch)}`,{method:'PATCH',body:{sha:nc.sha,force:false}});return nc.sha;}
+    catch(e){if(e.status!==422&&e.status!==409)throw e;await new Promise(r=>setTimeout(r,250+Math.random()*1000*(attempt+1)));}
+  }
+  throw new Error('The repository is busy. Please try again.');
+}
+function dataRepo(){const d=config&&config.data;const token=d&&deobf(d.key);return d&&d.owner&&d.repo&&token?{owner:d.owner,repo:d.repo,branch:d.branch||'main',token}:null;}
+
+/* ── Config ── */
+function detectRepo(){
+  const h=location.hostname;if(!h.endsWith('.github.io'))return null;
+  const owner=h.split('.')[0];const seg=location.pathname.split('/').filter(Boolean);
+  return {owner,repo:seg.length&&!/\.html?$/i.test(seg[0])?seg[0]:h};
+}
+function normalize(c){
+  c=c||{};
+  const d=detectRepo();
+  return {version:2,portalTitle:c.portalTitle||'AI Portal',portalSubtitle:c.portalSubtitle||'Timex Group Philippines · Supply Chain AI Programs',
+    allowedDomains:Array.isArray(c.allowedDomains)&&c.allowedDomains.length?c.allowedDomains:['timex.com','timexgroup.com'],
+    github:Object.assign({owner:d?d.owner:'',repo:d?d.repo:'',branch:'main'},c.github||{}),
+    data:Object.assign({owner:'',repo:'',branch:'main',key:''},c.data||{}),
+    apps:Array.isArray(c.apps)?c.apps:[],updatedAt:c.updatedAt||null};
+}
+async function loadConfig(){
+  try{const r=await fetch('portal-config.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)throw 0;config=normalize(await r.json());}
+  catch(e){config=normalize({});}
+}
+
+/* ── Boot & email gate ── */
+async function boot(){
+  await loadConfig();
+  try{admin=JSON.parse(localStorage.getItem(LS_ADMIN)||'null');}catch(e){admin=null;}
+  $('gateTitle').textContent=config.portalTitle;
+  $('gateDom').textContent='Allowed: '+config.allowedDomains.map(d=>'@'+d).join(', ');
+  $('gateEmail').placeholder='name@'+config.allowedDomains[0];
+  try{$('gateEmail').value=localStorage.getItem(LS_LAST)||'';}catch(e){}
+  $('gate').classList.add('show');
+  setTimeout(()=>$('gateEmail').focus(),60);
+}
+function enterPortal(){
+  const em=$('gateEmail').value.trim().toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){$('gateErr').textContent='Enter a valid email address.';return;}
+  const dom=em.split('@')[1];
+  if(!config.allowedDomains.some(d=>dom===d.toLowerCase()||dom.endsWith('.'+d.toLowerCase()))){$('gateErr').textContent='Only company emails are allowed ('+config.allowedDomains.map(d=>'@'+d).join(', ')+').';return;}
+  user=em;try{localStorage.setItem(LS_LAST,em);}catch(e){}
+  $('gate').classList.remove('show');$('appRoot').classList.remove('locked');
+  $('uEmail').textContent=em;$('uAv').textContent=initials(em);$('uAv').style.background=avColor(em);
+  logEvent('login',null);
+  go('home');
+}
+function signOut(){Object.keys(frames).forEach(closeFrame);user=null;lib=null;$('appRoot').classList.add('locked');$('gateEmail').value='';$('gateErr').textContent='';$('gate').classList.add('show');setTimeout(()=>$('gateEmail').focus(),60);}
+
+/* ── Analytics logging (data repo) ── */
+async function logEvent(ev,app){
+  const R=dataRepo();if(!R||!user)return;
+  const now=new Date();const day=localDay(now);
+  const path=`analytics/${day.slice(0,7)}/${day.slice(8)}.json`;
+  const rec={t:now.toISOString(),e:user,ev,a:app?app.id:null,n:app?app.name:null};
+  try{
+    await commit(R,`analytics: ${ev}${rec.n?' '+rec.n:''} (${user})`,async read=>{
+      let arr=[];const cur=await read(path);try{arr=cur?JSON.parse(cur):[];}catch(e){}
+      arr.push(rec);return [{path,content:JSON.stringify(arr)}];
+    });
+    anaCache=null;
+  }catch(e){console.warn('Analytics not recorded:',e.message);}
+}
+
+/* ── Navigation ── */
+const visibleApps=()=>config.apps.filter(a=>!a.hidden);
+function renderNav(){
+  const q=($('navSearch').value||'').toLowerCase();
+  const it=(id,ico,name,desc,extra='')=>`<button class="nav-item ${currentId===id?'active':''}" onclick="go('${id}')" title="${esc(name)}"><span class="nav-ico">${esc(ico)}</span><span class="nav-txt"><div class="nav-name">${esc(name)}</div><div class="nav-desc">${esc(desc)}</div></span>${extra}</button>`;
+  let h=it('home','🏠','Home','All programs');
+  h+=it('library','📚','My Library','Your own tools',lib?`<span class="nav-badge">${lib.items.length}</span>`:'');
+  h+=it('analytics','📈','Analytics','Usage & users');
+  const apps=visibleApps().filter(a=>!q||(a.name+' '+(a.description||'')+' '+(a.category||'')).toLowerCase().includes(q));
+  const groups={};apps.forEach(a=>{const g=a.category||'General';(groups[g]=groups[g]||[]).push(a);});
+  Object.keys(groups).forEach(g=>{
+    h+=`<div class="nav-group">${esc(g)}</div>`;
+    groups[g].forEach(a=>{h+=it(a.id,a.icon||'📄',a.name,a.description||a.file,frames[a.id]&&currentId!==a.id?'<span class="nav-dot" title="Open in background"></span>':'');});
+  });
+  if(lib&&lib.items.length){
+    const li=lib.items.filter(x=>!q||x.name.toLowerCase().includes(q));
+    if(li.length){h+=`<div class="nav-group">My Library</div>`;li.forEach(x=>{h+=it('lib:'+x.id,x.icon||'📄',x.name,x.description||'Personal tool',frames['lib:'+x.id]&&currentId!=='lib:'+x.id?'<span class="nav-dot"></span>':'');});}
+  }
+  if(!apps.length&&!visibleApps().length)h+=`<div class="nav-empty">No published apps yet.</div>`;
+  $('nav').innerHTML=h;
+  $('navAdmin').classList.toggle('active',currentId==='admin');
+  $('adminDesc').textContent=admin?'Connected · '+admin.owner+'/'+admin.repo:'Publish apps to GitHub';
+  $('brandSub').textContent=config.portalTitle;document.title='Timex '+config.portalTitle;
+}
+function setCrumb(i,t,s){$('crumbIco').textContent=i;$('crumbTitle').textContent=t;$('crumbSub').textContent=s||'';}
+function showPane(w){['home','library','analytics','admin'].forEach(p=>$('pane-'+p).classList.toggle('show',w===p));$('frameHost').classList.toggle('show',w==='frame');$('appActions').style.display=w==='frame'?'flex':'none';}
+async function go(id){
+  if(!user)return;
+  currentId=id;
+  if(id==='home'){showPane('home');setCrumb('🏠','Home',config.portalSubtitle);renderHome();}
+  else if(id==='library'){showPane('library');setCrumb('📚','My Library',user);renderLibrary();}
+  else if(id==='analytics'){showPane('analytics');setCrumb('📈','Analytics','How often each app is opened, and by how many users');renderAnalytics();}
+  else if(id==='admin'){showPane('admin');setCrumb('⚙️','Admin Control','Upload, edit and publish apps to GitHub');renderAdmin();}
+  else if(id.startsWith('lib:')){
+    const x=lib&&lib.items.find(i=>'lib:'+i.id===id);if(!x)return go('library');
+    showPane('frame');setCrumb(x.icon||'📄',x.name,'My Library · '+x.file);await showLibFrame(x);
+  }else{
+    const a=config.apps.find(x=>x.id===id);if(!a)return go('home');
+    showPane('frame');setCrumb(a.icon||'📄',a.name,(a.category||'General'));
+    const fresh=!frames[a.id];showAppFrame(a);if(fresh)logEvent('open',a);
+  }
+  renderNav();
+  if(!lib&&!libLoading)loadLibrary().then(renderNav).catch(()=>{});
+}
+
+/* ── Frames ── */
+function hideFrames(){Object.values(frames).forEach(f=>f.iframe.classList.remove('show'));}
+function makeFrame(key,src,label){
+  $('loader').classList.add('show');$('loaderTxt').textContent='Loading '+label+'…';
+  const ifr=document.createElement('iframe');
+  ifr.setAttribute('allow','fullscreen; clipboard-read; clipboard-write');ifr.setAttribute('allowfullscreen','');
+  ifr.onload=()=>$('loader').classList.remove('show');ifr.src=src;
+  $('frameHost').appendChild(ifr);frames[key]={iframe:ifr,url:src};
+  setTimeout(()=>$('loader').classList.remove('show'),15000);
+}
+function showAppFrame(a){hideFrames();if(!frames[a.id])makeFrame(a.id,'apps/'+encodeURIComponent(a.file)+'?v='+(a.v||1),a.name);frames[a.id].iframe.classList.add('show');}
+async function showLibFrame(x){
+  hideFrames();const key='lib:'+x.id;
+  if(!frames[key]){
+    const R=dataRepo();if(!R)return toast('Library storage is not set up yet',true);
+    $('loader').classList.add('show');$('loaderTxt').textContent='Loading '+x.name+'…';
+    try{const buf=await readFile(R,libDir()+'/files/'+x.file,null,true);if(!buf)throw new Error('file not found');
+      makeFrame(key,URL.createObjectURL(new Blob([buf],{type:'text/html'})),x.name);frames[key].blob=true;}
+    catch(e){$('loader').classList.remove('show');toast('Could not open: '+e.message,true);return go('library');}
+  }
+  frames[key].iframe.classList.add('show');
+}
+function closeFrame(k){const f=frames[k];if(!f)return;f.iframe.remove();if(f.blob)URL.revokeObjectURL(f.url);delete frames[k];}
+function reloadCurrent(){const k=currentId;closeFrame(k);go(k);}
+function closeCurrent(){closeFrame(currentId);go(currentId.startsWith('lib:')?'library':'home');}
+function openNewTab(){const f=frames[currentId];if(f)window.open(f.url,'_blank');}
+function fullscreen(){const f=frames[currentId];if(f&&f.iframe.requestFullscreen)f.iframe.requestFullscreen();}
+
+/* ── Home ── */
+function cardHtml(onclick,ico,name,cat,desc,foot){return `<div class="app-card" onclick="${onclick}"><div class="ac-head"><div class="ac-ico">${esc(ico||'📄')}</div><div><div class="ac-name">${esc(name)}</div><div class="ac-cat">${esc(cat)}</div></div></div><div class="ac-desc">${esc(desc||'No description.')}</div><div class="ac-foot"><span>${foot}</span><span class="ac-open">Open →</span></div></div>`;}
+function renderHome(){
+  const apps=visibleApps();const cats=new Set(apps.map(a=>a.category||'General'));
+  let h=`<div class="wrap"><div class="hero"><div class="hero-label">Timex Group · ${esc(config.portalTitle)}</div>
+    <div class="hero-title">Welcome, ${esc(user.split('@')[0].split(/[._]/)[0].replace(/^./,c=>c.toUpperCase()))}</div>
+    <div class="hero-sub">${esc(config.portalSubtitle)}. Choose a program on the left or below, and it opens here.</div>
+    <div class="hero-stats"><div><div class="hs-num">${apps.length}</div><div class="hs-lbl">Programs</div></div><div><div class="hs-num">${cats.size}</div><div class="hs-lbl">Categories</div></div><div><div class="hs-num">${lib?lib.items.length:'…'}</div><div class="hs-lbl">In My Library</div></div></div></div>`;
+  if(!apps.length)h+=`<div class="empty-box"><div class="big">🗂️</div><div style="font-size:15px;font-weight:600;color:#333">No programs published yet</div><div style="font-size:12px;margin-top:4px">An admin can publish apps from Admin Control.</div></div>`;
+  const groups={};apps.forEach(a=>{const g=a.category||'General';(groups[g]=groups[g]||[]).push(a);});
+  Object.keys(groups).forEach(g=>{h+=`<div class="sec-title">${esc(g)}</div><div class="cards">`+groups[g].map(a=>cardHtml(`go('${a.id}')`,a.icon,a.name,g,a.description,'Updated '+fmtDate(a.updatedAt||a.addedAt))).join('')+`</div>`;});
+  $('pane-home').innerHTML=h+'</div>';
+}
+
+/* ── My Library (data repo: library/<user>/library.json + files/) ── */
+const libDir=()=>'library/'+slug(user);
+async function loadLibrary(){
+  const R=dataRepo();if(!R||!user){lib={items:[]};return;}
+  libLoading=true;
+  try{const t=await readFile(R,libDir()+'/library.json');lib=t?JSON.parse(t):{email:user,items:[]};if(!Array.isArray(lib.items))lib.items=[];}
+  catch(e){lib={items:[],_err:e.message};}
+  finally{libLoading=false;}
+  if(currentId==='library')renderLibrary();
+}
+async function saveLibrary(message,mutate,extra){
+  const R=dataRepo();
+  await commit(R,message,async read=>{
+    const cur=await read(libDir()+'/library.json');let l=cur?JSON.parse(cur):{email:user,items:[]};
+    const more=await mutate(l,read)||[];l.email=user;l.updatedAt=new Date().toISOString();lib=l;
+    return [{path:libDir()+'/library.json',content:JSON.stringify(l,null,2)},...(extra||[]),...more];
+  });
+}
+function renderLibrary(){
+  const p=$('pane-library');const R=dataRepo();
+  if(!R){p.innerHTML=`<div class="wrap"><div class="empty-box"><div class="big">📚</div><div style="font-size:15px;font-weight:600;color:#333">My Library isn't set up yet</div><div style="font-size:12px;margin-top:4px">An admin needs to connect the data repository in Admin Control → Data Storage.</div></div></div>`;return;}
+  if(!lib||libLoading){p.innerHTML=`<div class="wrap"><div class="empty-box"><div class="spin" style="margin:0 auto 10px"></div>Loading your library…</div></div>`;if(!libLoading)loadLibrary();return;}
+  const st={submitted:'<span class="tag amber">Submitted for review</span>',published:'<span class="tag green">Published to portal</span>',rejected:'<span class="tag red">Not approved</span>'};
+  let h=`<div class="wrap"><div class="hero lib"><div class="hero-label">My Library · ${esc(user)}</div><div class="hero-title">Your personal tools</div>
+    <div class="hero-sub">Upload your own HTML tools. Only you see them here. When one is ready, submit it and the admin can publish it to the whole portal.</div>
+    <div class="hero-stats"><div><div class="hs-num">${lib.items.length}</div><div class="hs-lbl">Tools</div></div><div><div class="hs-num">${lib.items.filter(x=>x.status==='submitted').length}</div><div class="hs-lbl">Awaiting review</div></div><div><div class="hs-num">${lib.items.filter(x=>x.status==='published').length}</div><div class="hs-lbl">Published</div></div></div></div>`;
+  if(lib._err)h+=`<div class="warn-box">Could not read your library: ${esc(lib._err)}</div>`;
+  h+=`<div class="sec-title">My tools</div>`;
+  if(lib.items.length){
+    h+=`<div class="cards">`+lib.items.map(x=>`<div class="app-card" onclick="go('lib:${x.id}')"><div class="ac-head"><div class="ac-ico">${esc(x.icon||'📄')}</div><div style="flex:1;min-width:0"><div class="ac-name">${esc(x.name)}</div><div class="ac-cat">${fmtSize(x.size)} · ${fmtDate(x.updatedAt||x.addedAt)}</div></div></div>
+      <div class="ac-desc">${esc(x.description||'No description.')}</div>
+      <div class="ac-foot"><span>${st[x.status]||'<span class="tag">Private</span>'}</span><span class="row-actions" onclick="event.stopPropagation()">
+        <button class="mini" title="Edit details" onclick="libEdit('${x.id}')">✎</button>
+        <button class="mini" title="Upload a new version" onclick="libReplace('${x.id}')">⇪</button>
+        <button class="mini" title="Submit to publish on the portal" onclick="libSubmit('${x.id}')" ${x.status==='submitted'||x.status==='published'?'disabled':''}>🚀</button>
+        <button class="mini del" title="Delete" onclick="libDelete('${x.id}')">🗑</button></span></div></div>`).join('')+`</div>`;
+  }else h+=`<div class="empty-box" style="margin-bottom:24px"><div class="big">📚</div>No tools yet. Add your first one below.</div>`;
+  h+=addFormHtml('l','➕ Add a Tool to My Library','The file is saved to your private library on GitHub.','libAdd()','➕ Add to My Library')+'</div>';
+  p.innerHTML=h;wireDrop('l');
+}
+async function libAdd(){
+  const f=readAddForm('l');if(!f)return;
+  busy(true,'Saving to your library…');
+  try{
+    const id=uid(),file=slug(f.name)+'-'+id+'.html';const buf=await f.file.arrayBuffer();
+    await saveLibrary(`library: add ${f.name} (${user})`,l=>{l.items.push({id,name:f.name,icon:f.icon,category:f.category,description:f.description,file,size:f.file.size,addedAt:new Date().toISOString(),status:null});},[{path:libDir()+'/files/'+file,content:buf}]);
+    toast('Added "'+f.name+'" to My Library');renderLibrary();renderNav();
+  }catch(e){toast('Save failed: '+e.message,true);}finally{busy(false);}
+}
+function libEdit(id){const x=lib.items.find(i=>i.id===id);editModal(x,`libSaveEdit('${id}')`);}
+async function libSaveEdit(id){
+  const v=readEditModal();busy(true,'Saving…');
+  try{await saveLibrary(`library: edit ${v.name} (${user})`,l=>{const x=l.items.find(i=>i.id===id);if(x){Object.assign(x,v);x.updatedAt=new Date().toISOString();}});closeModal();renderLibrary();renderNav();toast('Saved');}
+  catch(e){toast('Save failed: '+e.message,true);}finally{busy(false);}
+}
+function libReplace(id){
+  pickFile(async f=>{
+    const x=lib.items.find(i=>i.id===id);busy(true,'Uploading new version…');
+    try{await saveLibrary(`library: update ${x.name} (${user})`,l=>{const y=l.items.find(i=>i.id===id);y.size=f.size;y.updatedAt=new Date().toISOString();if(y.status!=='submitted')y.status=y.status==='published'?'published':null;},[{path:libDir()+'/files/'+x.file,content:await f.arrayBuffer()}]);
+      closeFrame('lib:'+id);renderLibrary();toast('New version uploaded');}
+    catch(e){toast('Upload failed: '+e.message,true);}finally{busy(false);}
+  });
+}
+function libDelete(id){
+  const x=lib.items.find(i=>i.id===id);
+  openModal(`<h3>Delete "${esc(x.name)}"?</h3><div class="msg">This removes the tool and its file from your library.${x.status==='published'?' The copy already published on the portal is not affected.':''}</div><div class="modal-foot"><button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn danger" onclick="libDeleteGo('${id}')">🗑 Delete</button></div>`);
+}
+async function libDeleteGo(id){
+  const x=lib.items.find(i=>i.id===id);closeModal();busy(true,'Deleting…');
+  try{await saveLibrary(`library: delete ${x.name} (${user})`,l=>{l.items=l.items.filter(i=>i.id!==id);},[{path:libDir()+'/files/'+x.file,content:null}]);
+    closeFrame('lib:'+id);if(currentId==='lib:'+id)currentId='library';renderLibrary();renderNav();toast('Deleted');}
+  catch(e){toast('Delete failed: '+e.message,true);}finally{busy(false);}
+}
+function libSubmit(id){
+  const x=lib.items.find(i=>i.id===id);
+  openModal(`<h3>Submit "${esc(x.name)}" for publishing?</h3><div class="msg">The admin reviews it and can publish it to the portal for everyone. You can keep editing your copy meanwhile.</div>
+    <div class="fg"><label>Note to admin (optional)</label><textarea class="inp" id="subNote" placeholder="What does it do, and who is it for?"></textarea></div>
+    <div class="modal-foot"><button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn" onclick="libSubmitGo('${id}')">🚀 Submit</button></div>`);
+}
+async function libSubmitGo(id){
+  const note=$('subNote').value.trim();closeModal();busy(true,'Submitting…');
+  try{
+    await saveLibrary(`submission: ${lib.items.find(i=>i.id===id).name} (${user})`,async(l,read)=>{
+      const x=l.items.find(i=>i.id===id);x.status='submitted';x.submittedAt=new Date().toISOString();
+      const cur=await read('submissions.json');const subs=cur?JSON.parse(cur):[];
+      subs.push({id:uid(),email:user,libId:id,name:x.name,icon:x.icon,category:x.category,description:x.description,path:libDir()+'/files/'+x.file,size:x.size,note,submittedAt:x.submittedAt,status:'submitted'});
+      return [{path:'submissions.json',content:JSON.stringify(subs,null,2)}];
+    });
+    renderLibrary();toast('Submitted to the admin for review');
+  }catch(e){toast('Submit failed: '+e.message,true);}finally{busy(false);}
+}
+
+/* ── Shared form bits ── */
+function addFormHtml(px,title,sub,onAdd,btn){
+  return `<div class="card"><div class="card-h"><div><div class="card-t">${title}</div><div class="card-s">${sub}</div></div></div>
+    <div class="form-grid">
+      <div class="fg"><label>Icon</label><input class="inp emoji" id="${px}Icon" value="📊" maxlength="4"></div>
+      <div class="fg"><label>Name *</label><input class="inp" id="${px}Name" placeholder="e.g. OTB Report Analyzer"></div>
+      <div class="fg"><label>Category</label><input class="inp" id="${px}Cat" list="${px}CatList" placeholder="e.g. Supply Chain"><datalist id="${px}CatList">${[...new Set(config.apps.map(a=>a.category||'General'))].map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div>
+      <div class="fg full"><div class="emoji-row">${EMOJIS.map(e=>`<button type="button" onclick="$('${px}Icon').value='${e}'">${e}</button>`).join('')}</div></div>
+      <div class="fg full"><label>Description</label><textarea class="inp" id="${px}Desc" placeholder="Short description shown on the card"></textarea></div>
+      <div class="fg full"><label>HTML File *</label><div class="drop" id="${px}Drop" onclick="$('${px}File').click()">📄 Drop an <b>.html</b> file here or <b>browse</b><div id="${px}FileName" class="mono" style="margin-top:6px"></div></div><input type="file" id="${px}File" accept=".html,.htm" style="display:none"></div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px"><button class="btn" onclick="${onAdd}">${btn}</button></div></div>`;
+}
+const pending={};
+function wireDrop(px){
+  const d=$(px+'Drop'),inp=$(px+'File');if(!d)return;
+  const set=f=>{if(!f)return;if(!/\.html?$/i.test(f.name))return toast('Choose an .html file',true);pending[px]=f;$(px+'FileName').textContent=f.name+' · '+fmtSize(f.size);if(!$(px+'Name').value)$(px+'Name').value=f.name.replace(/\.html?$/i,'').replace(/^[0-9a-f]{8}-/,'').replace(/[_-]+/g,' ').trim();};
+  inp.onchange=()=>set(inp.files[0]);
+  d.ondragover=e=>{e.preventDefault();d.classList.add('over');};d.ondragleave=()=>d.classList.remove('over');
+  d.ondrop=e=>{e.preventDefault();d.classList.remove('over');set(e.dataTransfer.files[0]);};
+}
+function readAddForm(px){
+  const name=$(px+'Name').value.trim();
+  if(!name){toast('Enter a name',true);return null;}
+  if(!pending[px]){toast('Choose an HTML file',true);return null;}
+  if(pending[px].size>95*1048576){toast('File is over GitHub\'s 100 MB limit',true);return null;}
+  const r={name,icon:$(px+'Icon').value.trim()||'📄',category:$(px+'Cat').value.trim()||'General',description:$(px+'Desc').value.trim(),file:pending[px]};
+  delete pending[px];return r;
+}
+function editModal(x,onSave){
+  openModal(`<h3>Edit Details</h3><div class="msg">Change how this appears in the portal.</div>
+    <div class="form-grid" style="grid-template-columns:80px 1fr">
+      <div class="fg"><label>Icon</label><input class="inp emoji" id="eIcon" value="${esc(x.icon||'📄')}"></div>
+      <div class="fg"><label>Name</label><input class="inp" id="eName" value="${esc(x.name)}"></div>
+      <div class="fg full"><label>Category</label><input class="inp" id="eCat" value="${esc(x.category||'')}"></div>
+      <div class="fg full"><label>Description</label><textarea class="inp" id="eDesc">${esc(x.description||'')}</textarea></div>
+    </div><div class="modal-foot"><button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn" onclick="${onSave}">Save</button></div>`);
+}
+function readEditModal(){return {name:$('eName').value.trim()||'Untitled',icon:$('eIcon').value.trim()||'📄',category:$('eCat').value.trim()||'General',description:$('eDesc').value.trim()};}
+function pickFile(cb){const inp=$('hiddenFile');inp.value='';inp.onchange=()=>{const f=inp.files[0];if(f)cb(f);};inp.click();}
+
+/* ── Analytics page ── */
+async function fetchAnalytics(days){
+  const R=dataRepo();if(!R)throw new Error('not-configured');
+  const end=new Date(),start=new Date();start.setDate(end.getDate()-days+1);
+  const s=localDay(start),e=localDay(end);
+  const months=[];const m=new Date(start.getFullYear(),start.getMonth(),1);
+  while(localDay(m).slice(0,7)<=e.slice(0,7)){months.push(localDay(m).slice(0,7));m.setMonth(m.getMonth()+1);}
+  const files=[];
+  for(const mo of months){(await listDir(R,'analytics/'+mo)).forEach(f=>{const d=mo+'-'+f.name.replace('.json','');if(f.type==='file'&&d>=s&&d<=e)files.push(f.path);});}
+  const events=[];let i=0;
+  async function worker(){while(i<files.length){const p=files[i++];try{const t=await readFile(R,p);if(t)events.push(...JSON.parse(t));}catch(err){}}}
+  await Promise.all([1,2,3,4,5,6].map(worker));
+  return {events,start:s,end:e,days};
+}
+function setAnaDays(d){anaDays=d;anaCache=null;renderAnalytics();}
+async function renderAnalytics(){
+  const p=$('pane-analytics');
+  if(!dataRepo()){p.innerHTML=`<div class="wrap"><div class="empty-box"><div class="big">📈</div><div style="font-size:15px;font-weight:600;color:#333">Analytics isn't set up yet</div><div style="font-size:12px;margin-top:4px">An admin needs to connect the data repository in Admin Control → Data Storage.</div></div></div>`;return;}
+  if(!anaCache||anaCache.days!==anaDays){
+    p.innerHTML=`<div class="wrap"><div class="empty-box"><div class="spin" style="margin:0 auto 10px"></div>Loading usage data from GitHub…</div></div>`;
+    try{anaCache=await fetchAnalytics(anaDays);}catch(e){p.innerHTML=`<div class="wrap"><div class="warn-box">Could not load analytics: ${esc(e.message)}</div></div>`;return;}
+    if(currentId!=='analytics')return;
+  }
+  const {events,start,end}=anaCache;
+  const opens=events.filter(e=>e.ev==='open'),logins=events.filter(e=>e.ev==='login');
+  const allUsers=new Set(events.map(e=>e.e));
+  // per app
+  const per={};config.apps.forEach(a=>per[a.id]={id:a.id,name:a.name,icon:a.icon,opens:0,users:new Set(),last:null,byUser:{}});
+  opens.forEach(e=>{const r=per[e.a]||(per[e.a]={id:e.a,name:(e.n||e.a)+' (removed)',icon:'🗑',opens:0,users:new Set(),last:null,byUser:{}});r.opens++;r.users.add(e.e);r.byUser[e.e]=(r.byUser[e.e]||0)+1;if(!r.last||e.t>r.last)r.last=e.t;});
+  const rows=Object.values(per).sort((a,b)=>b.opens-a.opens);const maxO=Math.max(1,...rows.map(r=>r.opens));
+  // daily series
+  const series=[];const d=new Date(start+'T00:00:00');
+  while(localDay(d)<=end){const k=localDay(d);series.push({k,opens:0,users:new Set()});d.setDate(d.getDate()+1);}
+  const idx={};series.forEach((s,i)=>idx[s.k]=i);
+  events.forEach(e=>{const s=series[idx[localDay(new Date(e.t))]];if(!s)return;if(e.ev==='open')s.opens++;s.users.add(e.e);});
+  const maxD=Math.max(1,...series.map(s=>s.opens));
+  const step=Math.ceil(series.length/10);
+  // users
+  const um={};events.forEach(e=>{const u=um[e.e]||(um[e.e]={e:e.e,logins:0,opens:0,last:null,apps:{}});if(e.ev==='login')u.logins++;else{u.opens++;u.apps[e.n||e.a]=(u.apps[e.n||e.a]||0)+1;}if(!u.last||e.t>u.last)u.last=e.t;});
+  const users=Object.values(um).sort((a,b)=>b.opens-a.opens||b.logins-a.logins);
+  const top=rows[0]&&rows[0].opens?rows[0]:null;
+  let h=`<div class="wrap"><div class="hero ana"><div class="hero-label">Portal Analytics · ${fmtDate(start+'T12:00')} – ${fmtDate(end+'T12:00')}</div>
+    <div class="hero-title">How the portal is being used</div><div class="hero-sub">Counts come from every visit: a login when someone enters their email, and an open each time an app is launched.</div>
+    <div class="hero-stats"><div><div class="hs-num">${opens.length}</div><div class="hs-lbl">App opens</div></div><div><div class="hs-num">${allUsers.size}</div><div class="hs-lbl">Unique users</div></div><div><div class="hs-num">${logins.length}</div><div class="hs-lbl">Portal visits</div></div><div><div class="hs-num">${top?esc(top.icon)+' '+esc(top.name):'—'}</div><div class="hs-lbl">Most used app</div></div></div></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:10px;flex-wrap:wrap">
+      <div class="seg">${[7,30,90,365].map(n=>`<button class="${anaDays===n?'on':''}" onclick="setAnaDays(${n})">${n===365?'1 year':n+' days'}</button>`).join('')}</div>
+      <div style="display:flex;gap:6px"><button class="btn ghost sm" onclick="anaCache=null;renderAnalytics()">↻ Refresh</button><button class="btn ghost sm" onclick="exportAnalytics()">⬇ Export CSV</button></div></div>
+    <div class="card"><div class="card-h"><div><div class="card-t">Usage by Application</div><div class="card-s">Times opened and number of different users per app</div></div></div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Application</th><th class="num">Times opened</th><th style="width:22%"></th><th class="num">Users</th><th class="num">Opens / user</th><th>Most frequent user</th><th>Last opened</th></tr></thead><tbody>
+    ${rows.map(r=>{const tu=Object.entries(r.byUser).sort((a,b)=>b[1]-a[1])[0];return `<tr><td><span style="margin-right:6px">${esc(r.icon||'📄')}</span><b>${esc(r.name)}</b></td><td class="num"><b>${r.opens}</b></td><td><div class="hbar"><div style="width:${r.opens/maxO*100}%"></div></div></td><td class="num">${r.users.size}</td><td class="num">${r.users.size?(r.opens/r.users.size).toFixed(1):'—'}</td><td>${tu?esc(tu[0])+' <span class="mono">('+tu[1]+')</span>':'<span class="mono">—</span>'}</td><td class="mono">${fmtDT(r.last)}</td></tr>`;}).join('')||'<tr><td colspan="7" class="note">No apps.</td></tr>'}
+    </tbody></table></div></div>
+    <div class="card"><div class="card-h"><div><div class="card-t">Daily App Opens</div><div class="card-s">Hover a bar for the day's opens and active users</div></div></div>
+      <div class="bars">${series.map(s=>`<div class="bar-col"><div class="bar-tip">${fmtDate(s.k+'T12:00')} · ${s.opens} opens · ${s.users.size} users</div><div class="bar" style="height:${s.opens/maxD*100}%"></div></div>`).join('')}</div>
+      <div class="bar-x">${series.map((s,i)=>`<span>${i%step===0?s.k.slice(5):''}</span>`).join('')}</div></div>
+    <div class="card"><div class="card-h"><div><div class="card-t">Users (${users.length})</div><div class="card-s">Everyone who entered the portal in this period</div></div></div>
+    <div class="tbl-wrap" style="max-height:420px;overflow-y:auto"><table class="tbl"><thead><tr><th>User</th><th class="num">Visits</th><th class="num">App opens</th><th>Favourite app</th><th>Last seen</th></tr></thead><tbody>
+    ${users.map(u=>{const fav=Object.entries(u.apps).sort((a,b)=>b[1]-a[1])[0];return `<tr><td><span class="uav" style="display:inline-flex;width:22px;height:22px;font-size:9px;margin-right:8px;vertical-align:middle;background:${avColor(u.e)}">${initials(u.e)}</span>${esc(u.e)}</td><td class="num">${u.logins}</td><td class="num">${u.opens}</td><td>${fav?esc(fav[0]):'<span class="mono">—</span>'}</td><td class="mono">${fmtDT(u.last)}</td></tr>`;}).join('')||'<tr><td colspan="5" class="note">No visits recorded in this period.</td></tr>'}
+    </tbody></table></div></div></div>`;
+  p.innerHTML=h;
+}
+function exportAnalytics(){
+  if(!anaCache)return;
+  const rows=[['Timestamp','Email','Event','App ID','App Name']].concat(anaCache.events.sort((a,b)=>a.t<b.t?-1:1).map(e=>[e.t,e.e,e.ev,e.a||'',e.n||'']));
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`portal-analytics-${anaCache.start}_to_${anaCache.end}.csv`;a.click();
+}
+
+/* ── Admin ── */
+function adminRepo(){return admin?{owner:admin.owner,repo:admin.repo,branch:admin.branch||'main',token:admin.token}:null;}
+async function adminConnect(){
+  const a={owner:$('aOwner').value.trim(),repo:$('aRepo').value.trim(),branch:$('aBranch').value.trim()||'main',token:$('aToken').value.trim()};
+  if(!a.repo||!a.token)return toast('Fill in repository and token',true);
+  busy(true,'Checking your GitHub account…');
+  try{
+    const me=await gh(a.token,'/user');a.login=me.login;a.avatar=me.avatar_url;a.name=me.name||me.login;
+    if(!a.owner)a.owner=me.login;
+    const r=await gh(a.token,`/repos/${a.owner}/${a.repo}`);
+    if(!(r.permissions&&r.permissions.push))throw new Error('this token cannot write to the repository');
+    a.branch=$('aBranch').value.trim()||r.default_branch||'main';
+    await gh(a.token,`/repos/${a.owner}/${a.repo}/git/ref/heads/${encodeURIComponent(a.branch)}`);
+    admin=a;localStorage.setItem(LS_ADMIN,JSON.stringify(a));
+    const cur=await readFile(adminRepo(),'portal-config.json');if(cur)config=normalize(JSON.parse(cur));
+    toast('Connected as '+me.login);renderAdmin();renderNav();
+  }catch(e){toast('Could not connect: '+e.message,true);}finally{busy(false);}
+}
+function adminDisconnect(){admin=null;localStorage.removeItem(LS_ADMIN);renderAdmin();renderNav();toast('Admin disconnected on this browser');}
+/* Commit a config change (plus optional files) to the portal repo, always starting from the latest config in GitHub. */
+async function publish(message,mutate,files){
+  const R=adminRepo();
+  await commit(R,message,async read=>{
+    const cur=await read('portal-config.json');const c=normalize(cur?JSON.parse(cur):config);
+    const more=await mutate(c)||[];c.updatedAt=new Date().toISOString();config=c;
+    return [{path:'portal-config.json',content:JSON.stringify(stripRuntime(c),null,2)},...(files||[]),...more];
+  });
+}
+function uniqueAppFile(name){const b=slug(name);let f=b+'.html',i=2;const used=new Set(config.apps.map(a=>a.file));while(used.has(f)){f=b+'-'+i+'.html';i++;}return f;}
+
+/* ══════════ GitHub personal-account setup wizard ══════════
+   Uses ONE token from your personal account to create both repos, upload the portal,
+   enable GitHub Pages and connect data storage. Everything lives under your account. */
+const wz={step:1,token:'',me:null,portal:'timex-ai-portal',data:'ai-portal-data',pState:null,dState:null,files:null,fromSite:false,dataToken:'',log:[],done:false,url:''};
+function wzSteps(){return ['Account','Repositories','Portal files','Data token','Set up'];}
+function renderSetup(p){
+  const st=wzSteps();
+  const head=`<div style="display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap">${st.map((t,i)=>`<span class="tag ${wz.step===i+1?'purple':wz.step>i+1?'green':''}" style="padding:4px 12px;font-size:11px">${wz.step>i+1?'✓':i+1} · ${t}</span>`).join('')}</div>`;
+  let body='';
+  if(wz.step===1){
+    body=`<div class="card-t" style="margin-bottom:6px">1 · Sign in with your personal GitHub account</div>
+      <div class="note" style="margin-bottom:14px">Create a token on GitHub. It lets the portal create the repositories and publish to them. The quickest is a <b>classic token</b> with the <code>repo</code> scope, which the link below fills in for you.</div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <a class="btn ghost sm" target="_blank" href="https://github.com/settings/tokens/new?scopes=repo&description=Timex%20AI%20Portal%20admin">① Create token on GitHub ↗</a>
+        <span class="note" style="align-self:center">Then copy the token and paste it here ②</span></div>
+      <div class="fg"><label>Personal access token</label><input class="inp" id="wzToken" type="password" placeholder="ghp_… or github_pat_…" value="${esc(wz.token)}" onkeydown="if(event.key==='Enter')wzCheckAccount()"></div>
+      ${wz.me?`<div class="info-box" style="margin-top:14px;display:flex;align-items:center;gap:12px"><img src="${esc(wz.me.avatar_url)}" style="width:38px;height:38px;border-radius:50%"><div><b>${esc(wz.me.name||wz.me.login)}</b> · @${esc(wz.me.login)}<div class="note">All repositories will be created under github.com/${esc(wz.me.login)}</div></div></div>`:''}
+      <div class="note" style="margin-top:12px">Using a fine-grained token instead? Give it <b>All repositories</b> with <b>Administration</b>, <b>Contents</b> and <b>Pages</b> set to Read and write. The token is kept only in this browser.</div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px">${wz.me?`<button class="btn" onclick="wz.step=2;renderAdmin()">Next →</button>`:`<button class="btn" onclick="wzCheckAccount()">Verify account</button>`}</div>`;
+  }else if(wz.step===2){
+    const stt=s=>!s?'':s.exists?`<span class="tag ${s.ok?'blue':'red'}">${s.ok?'Exists. It will be used':'Exists, but you have no write access'}</span>${s.priv!==undefined?` <span class="tag">${s.priv?'Private':'Public'}</span>`:''}`:'<span class="tag green">Will be created</span>';
+    body=`<div class="card-t" style="margin-bottom:6px">2 · Repositories in @${esc(wz.me.login)}</div>
+      <div class="note" style="margin-bottom:14px">The portal repo holds the website and apps. It must be <b>public</b> for free GitHub Pages; GitHub Pro lets it be private, but the website is still public. The data repo holds analytics and user libraries, and is always <b>private</b>.</div>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr">
+        <div class="fg"><label>Portal repository (public website)</label><input class="inp" id="wzPortal" value="${esc(wz.portal)}"><div>${stt(wz.pState)}</div></div>
+        <div class="fg"><label>Data repository (private)</label><input class="inp" id="wzData" value="${esc(wz.data)}"><div>${stt(wz.dState)}</div></div>
+      </div>
+      ${wz.dState&&wz.dState.exists&&wz.dState.priv===false?'<div class="warn-box" style="margin-top:12px">⚠️ This data repository is PUBLIC. Visit logs and libraries would be visible to anyone. Choose another name or make it private on GitHub.</div>':''}
+      <div class="note" style="margin-top:8px">Your website will be at <b>https://${esc(wz.me.login)}.github.io/${esc(wz.portal)}/</b></div>
+      <div style="display:flex;justify-content:space-between;gap:8px;margin-top:16px"><button class="btn ghost" onclick="wz.step=1;renderAdmin()">← Back</button><div style="display:flex;gap:8px"><button class="btn ghost" onclick="wzCheckRepos()">Check names</button><button class="btn" onclick="wzCheckRepos(true)">Next →</button></div></div>`;
+  }else if(wz.step===3){
+    const onSite=!!detectRepo();
+    const tot=wz.files?wz.files.reduce((a,f)=>a+f.size,0):0;
+    body=`<div class="card-t" style="margin-bottom:6px">3 · Portal files to upload</div>
+      <div class="note" style="margin-bottom:14px">Choose the <b>timex-ai-portal</b> folder you unzipped. It contains index.html, portal-config.json and the apps folder. Every file is uploaded to your portal repository. If the repository already has files, files with the same name are replaced and the rest are kept.</div>
+      <div class="drop" onclick="$('wzDir').click()">📁 Click to choose the <b>timex-ai-portal</b> folder</div>
+      <input type="file" id="wzDir" webkitdirectory directory multiple style="display:none" onchange="wzPickFolder(this.files)">
+      ${onSite?`<div style="text-align:center;margin:10px 0" class="note">or <a href="#" onclick="wzFromSite();return false">copy the files from this website</a></div>`:''}
+      ${wz.files?`<div class="tbl-wrap" style="margin-top:12px;max-height:220px;overflow:auto"><table class="tbl"><thead><tr><th>File</th><th class="num">Size</th></tr></thead><tbody>${wz.files.map(f=>`<tr><td class="mono">${esc(f.path)}</td><td class="num mono">${fmtSize(f.size)}</td></tr>`).join('')}</tbody></table></div><div class="note" style="margin-top:6px">${wz.files.length} files · ${fmtSize(tot)}${wz.files.some(f=>f.path==='index.html')?'':' · <b style="color:#a32d2d">index.html is missing</b>'}</div>`:''}
+      <div style="display:flex;justify-content:space-between;gap:8px;margin-top:16px"><button class="btn ghost" onclick="wz.step=2;renderAdmin()">← Back</button><button class="btn" onclick="wzFilesNext()">Next →</button></div>`;
+  }else if(wz.step===4){
+    body=`<div class="card-t" style="margin-bottom:6px">4 · Data token (for visit logs and libraries)</div>
+      <div class="warn-box">Every visitor's browser saves its own visit, so this token is built into the website, scrambled. Create a <b>separate fine-grained token</b> that can reach <b>only ${esc(wz.me.login)}/${esc(wz.data)}</b>. Then even if someone extracts it, they cannot touch your other repositories or the portal itself.</div>
+      <ol class="steps" style="margin-bottom:14px">
+        <li>Open <a target="_blank" href="https://github.com/settings/personal-access-tokens/new">Fine-grained token ↗</a> and name it <code>Timex AI Portal data</code>.</li>
+        <li><b>Repository access → Only select repositories →</b> <code>${esc(wz.data)}</code>. If it isn't in the list yet, click <b>Skip for now</b> below and add the token in Admin Control after setup finishes.</li>
+        <li><b>Permissions → Contents → Read and write.</b> Leave everything else at No access.</li>
+        <li>Generate the token, copy it, and paste it below.</li>
+      </ol>
+      <div class="fg"><label>Data token</label><input class="inp" id="wzDataTok" type="password" placeholder="github_pat_…" value="${esc(wz.dataToken)}"></div>
+      <div style="display:flex;justify-content:space-between;gap:8px;margin-top:16px"><button class="btn ghost" onclick="wz.step=3;renderAdmin()">← Back</button><div style="display:flex;gap:8px"><button class="btn ghost" onclick="wz.dataToken='';wz.step=5;renderAdmin()">Skip for now</button><button class="btn" onclick="wzDataNext()">Next →</button></div></div>`;
+  }else{
+    const L=wz.log.map(l=>`<div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid #f3f2ef;font-size:13px"><span style="width:20px;text-align:center">${l.s==='run'?'<div class="spin sm"></div>':l.s==='ok'?'✅':l.s==='warn'?'⚠️':l.s==='err'?'❌':'⬜'}</span><span style="flex:1">${esc(l.t)}${l.d?`<div class="note">${esc(l.d)}</div>`:''}</span></div>`).join('');
+    body=`<div class="card-t" style="margin-bottom:6px">5 · Set up in @${esc(wz.me.login)}</div>
+      <div class="tbl-wrap" style="padding:4px 14px;margin:12px 0">
+        <div class="note" style="padding:8px 0">Portal: <b>${esc(wz.me.login)}/${esc(wz.portal)}</b> (public) · Data: <b>${esc(wz.me.login)}/${esc(wz.data)}</b> (private) · ${wz.files.length} files · Data token: ${wz.dataToken?'✓':'add later'}</div>${L}</div>
+      ${wz.done?`<div class="info-box"><b>🎉 Your portal is set up in your GitHub account.</b><br>Website: <a target="_blank" href="${esc(wz.url)}">${esc(wz.url)}</a>. The first build takes 1–2 minutes. Open the link there; it's the address you share with users.</div>`:''}
+      <div style="display:flex;justify-content:space-between;gap:8px;margin-top:12px"><button class="btn ghost" onclick="wz.step=4;renderAdmin()" ${wz.running||wz.done?'disabled':''}>← Back</button>
+      ${wz.done?`<div style="display:flex;gap:8px"><a class="btn ghost" target="_blank" href="${esc(wz.url)}">Open live portal ↗</a><button class="btn" onclick="wz.step=1;wz.done=false;wz.log=[];renderAdmin()">Close setup</button></div>`:`<button class="btn" onclick="wzRun()" ${wz.running?'disabled':''}>${wz.running?'Setting up…':'🚀 Create & publish'}</button>`}</div>`;
+  }
+  return `<div class="card" style="max-width:780px;margin:20px auto 20px"><div class="card-h"><div><div class="card-t">🐙 Set up with my GitHub account</div><div class="card-s">Creates everything in your personal GitHub account: website, apps, settings, analytics and libraries.</div></div></div>${head}${body}</div>`;
+}
+async function wzCheckAccount(){
+  const t=$('wzToken').value.trim();if(!t)return toast('Paste your token first',true);
+  busy(true,'Checking your account…');
+  try{
+    const r=await fetch(API+'/user',{headers:{Authorization:'Bearer '+t,Accept:'application/vnd.github+json'},cache:'no-store'});
+    if(!r.ok)throw new Error(r.status===401?'token is invalid or expired':'GitHub '+r.status);
+    const scopes=r.headers.get('x-oauth-scopes');
+    if(scopes!==null&&scopes!==''&&!scopes.split(',').map(x=>x.trim()).includes('repo'))throw new Error('this classic token is missing the "repo" scope');
+    wz.token=t;wz.me=await r.json();renderAdmin();
+  }catch(e){toast('Could not verify: '+e.message,true);}finally{busy(false);}
+}
+async function repoState(name){
+  const r=await gh(wz.token,`/repos/${wz.me.login}/${name}`,{allow404:true});
+  return r?{exists:true,ok:!!(r.permissions&&r.permissions.push),priv:r.private,branch:r.default_branch}:{exists:false};
+}
+async function wzCheckRepos(next){
+  wz.portal=slug($('wzPortal').value)||'timex-ai-portal';wz.data=slug($('wzData').value)||'ai-portal-data';
+  if(wz.portal===wz.data)return toast('Use two different repository names',true);
+  busy(true,'Checking repositories…');
+  try{
+    wz.pState=await repoState(wz.portal);wz.dState=await repoState(wz.data);
+    const bad=(wz.pState.exists&&!wz.pState.ok)||(wz.dState.exists&&!wz.dState.ok)||(wz.dState.exists&&!wz.dState.priv);
+    if(next&&!bad)wz.step=3;renderAdmin();
+    if(next&&bad)toast('Fix the repository names first',true);
+  }catch(e){toast(e.message,true);}finally{busy(false);}
+}
+function wzPickFolder(list){
+  const files=[...list].filter(f=>!/(^|\/)(\.git|\.DS_Store|Thumbs\.db)(\/|$)/.test(f.webkitRelativePath||f.name));
+  if(!files.length)return toast('That folder is empty',true);
+  const strip=p=>{const parts=p.split('/');return parts.length>1?parts.slice(1).join('/'):p;};
+  wz.files=files.map(f=>({path:strip(f.webkitRelativePath||f.name),size:f.size,file:f}));
+  wz.fromSite=false;renderAdmin();
+}
+async function wzFromSite(){
+  busy(true,'Collecting files from this website…');
+  try{
+    const list=['index.html','portal-config.json','.nojekyll','README.md',...config.apps.map(a=>'apps/'+a.file)];
+    const out=[];
+    for(const p of list){const r=await fetch(p+'?t='+Date.now(),{cache:'no-store'});if(r.ok){const b=await r.arrayBuffer();out.push({path:p,size:b.byteLength,buf:b});}}
+    wz.files=out;wz.fromSite=true;renderAdmin();
+  }catch(e){toast(e.message,true);}finally{busy(false);}
+}
+function wzFilesNext(){
+  if(!wz.files||!wz.files.length)return toast('Choose the portal folder first',true);
+  if(!wz.files.some(f=>f.path==='index.html'))return toast('index.html is missing. Choose the timex-ai-portal folder itself.',true);
+  const big=wz.files.find(f=>f.size>95*1048576);if(big)return toast(big.path+' is over GitHub\'s 100 MB limit',true);
+  wz.step=4;renderAdmin();
+}
+function wzDataNext(){
+  const t=$('wzDataTok').value.trim();if(!t)return toast('Paste the data token, or click Skip for now',true);
+  if(t===wz.token)return toast('Use a separate token for data, not your admin token',true);
+  wz.dataToken=t;wz.step=5;renderAdmin();
+}
+function wzLog(t,s,d){const l={t,s,d};wz.log.push(l);renderAdmin();return l;}
+function wzSet(l,s,d){l.s=s;if(d!==undefined)l.d=d;renderAdmin();}
+async function waitForBranch(R){
+  for(let i=0;i<15;i++){
+    const r=await gh(R.token,`${base(R)}/git/ref/heads/${encodeURIComponent(R.branch)}`,{allow404:true}).catch(e=>e.status===409?null:Promise.reject(e));
+    if(r)return;await new Promise(x=>setTimeout(x,1500));
+  }
+  throw new Error('the new repository did not finish initializing. Please try again.');
+}
+async function ensureRepo(name,priv,desc){
+  const st=await repoState(name);
+  if(st.exists)return {branch:st.branch||'main',created:false};
+  const r=await gh(wz.token,'/user/repos',{method:'POST',body:{name,private:priv,auto_init:true,description:desc}});
+  const R={owner:wz.me.login,repo:name,branch:r.default_branch||'main',token:wz.token};
+  await waitForBranch(R);
+  return {branch:R.branch,created:true};
+}
+async function wzRun(){
+  if(wz.running)return;wz.running=true;wz.log=[];wz.done=false;
+  const login=wz.me.login;
+  try{
+    let l=wzLog('Portal repository '+login+'/'+wz.portal,'run');
+    const P=await ensureRepo(wz.portal,false,'Timex Group AI Portal');wzSet(l,'ok',P.created?'Created (public)':'Already existed. It will be used.');
+    l=wzLog('Data repository '+login+'/'+wz.data,'run');
+    const D=await ensureRepo(wz.data,true,'Timex AI Portal data: analytics, libraries, submissions (private)');wzSet(l,'ok',D.created?'Created (private)':'Already existed. It will be used.');
+    const PR={owner:login,repo:wz.portal,branch:P.branch,token:wz.token};
+    l=wzLog('Uploading '+wz.files.length+' files and settings','run');
+    await commit(PR,'Set up Timex AI Portal',async read=>{
+      const out=[];let cfgText=null;
+      for(const f of wz.files){
+        const buf=f.buf||await f.file.arrayBuffer();
+        if(f.path==='portal-config.json'){cfgText=new TextDecoder().decode(buf);continue;}
+        out.push({path:f.path,content:buf});
+      }
+      const existing=await read('portal-config.json');
+      let c=normalize(JSON.parse(existing||cfgText||'{}'));
+      if(existing&&cfgText){const up=normalize(JSON.parse(cfgText));const ids=new Set(c.apps.map(a=>a.file));up.apps.forEach(a=>{if(!ids.has(a.file))c.apps.push(a);});}
+      c.github={owner:login,repo:wz.portal,branch:P.branch};
+      if(wz.dataToken)c.data={owner:login,repo:wz.data,branch:D.branch,key:obf(wz.dataToken)};
+      else c.data=Object.assign(c.data||{},{owner:login,repo:wz.data,branch:D.branch});
+      c.updatedAt=new Date().toISOString();config=c;
+      if(!wz.files.some(f=>f.path==='.nojekyll'))out.push({path:'.nojekyll',content:''});
+      out.push({path:'portal-config.json',content:JSON.stringify(stripRuntime(c),null,2)});
+      return out;
+    });
+    wzSet(l,'ok','Committed to '+login+'/'+wz.portal);
+    l=wzLog('Turning on GitHub Pages','run');
+    try{await gh(wz.token,`/repos/${login}/${wz.portal}/pages`,{method:'POST',body:{build_type:'legacy',source:{branch:P.branch,path:'/'}}});wzSet(l,'ok','Pages enabled from '+P.branch+' /');}
+    catch(e){if(e.status===409)wzSet(l,'ok','Already enabled');else wzSet(l,'warn','Could not turn on Pages automatically ('+e.message+'). Turn it on in the repo: Settings → Pages → Deploy from branch '+P.branch+' / root.');}
+    if(wz.dataToken){
+      l=wzLog('Testing the data token','run');
+      try{const r=await gh(wz.dataToken,`/repos/${login}/${wz.data}`);if(!(r.permissions&&r.permissions.push))throw new Error('token has no write access');
+        const DR={owner:login,repo:wz.data,branch:D.branch,token:wz.dataToken};
+        await commit(DR,'Initialize portal data',async read=>(await read('submissions.json'))?[]:[{path:'submissions.json',content:'[]'}]);
+        wzSet(l,'ok','Analytics and libraries will be saved to '+login+'/'+wz.data);}
+      catch(e){wzSet(l,'warn','Data token problem: '+e.message+'. Fix it later in Admin Control → Data Storage.');}
+    }else wzLog('Data token skipped','warn','Add it in Admin Control → Data Storage to turn on analytics and libraries.');
+    admin={owner:login,repo:wz.portal,branch:P.branch,token:wz.token,login,avatar:wz.me.avatar_url,name:wz.me.name||login};
+    localStorage.setItem(LS_ADMIN,JSON.stringify(admin));
+    wz.url=`https://${login}.github.io/${wz.portal}/`;wz.done=true;
+    wzLog('Admin connected on this browser','ok');
+    toast('Setup complete');renderNav();
+  }catch(e){wz.log.filter(x=>x.s==='run').forEach(x=>{x.s='err';x.d=e.message;});toast('Setup stopped: '+e.message,true);}
+  finally{wz.running=false;renderAdmin();}
+}
+
+function renderAdmin(){
+  const p=$('pane-admin');const d=detectRepo();
+  if(!admin||wz.done){
+    p.innerHTML=`<div class="wrap">${renderSetup(p)}
+      <details class="card" style="max-width:780px;margin:0 auto 20px" ${wz.done?'':''}><summary style="cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#555">🔐 Already set up? Connect to an existing portal repository</summary>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr 110px;margin-top:16px">
+        <div class="fg"><label>Owner (blank = your account)</label><input class="inp" id="aOwner" value="${esc(config.github.owner||(d&&d.owner)||'')}"></div>
+        <div class="fg"><label>Repository</label><input class="inp" id="aRepo" value="${esc(config.github.repo||(d&&d.repo)||'timex-ai-portal')}"></div>
+        <div class="fg"><label>Branch</label><input class="inp" id="aBranch" value="${esc(config.github.branch||'main')}"></div>
+        <div class="fg full"><label>Personal access token</label><input class="inp" id="aToken" type="password" placeholder="ghp_… or github_pat_…" onkeydown="if(event.key==='Enter')adminConnect()"></div>
+      </div>
+      <div class="note" style="margin-top:10px">The token is kept only in this browser. It is never put on the website.</div>
+      <div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn" onclick="adminConnect()">Connect</button></div></details></div>`;
+    return;
+  }
+  const rows=config.apps.map((a,i)=>`<tr>
+    <td style="font-size:18px;width:40px">${esc(a.icon||'📄')}</td>
+    <td><div style="font-weight:600">${esc(a.name)}</div><div style="font-size:11px;color:#999;max-width:300px">${esc(a.description||'')}</div></td>
+    <td><span class="tag">${esc(a.category||'General')}</span></td>
+    <td class="mono">apps/${esc(a.file)}</td><td class="mono">v${a.v||1} · ${fmtDate(a.updatedAt||a.addedAt)}</td>
+    <td>${a.hidden?'<span class="tag amber">Hidden</span>':'<span class="tag green">Live</span>'}</td>
+    <td><div class="row-actions">
+      <button class="mini" title="Move up" onclick="admMove(${i},-1)" ${i===0?'disabled':''}>▲</button>
+      <button class="mini" title="Move down" onclick="admMove(${i},1)" ${i===config.apps.length-1?'disabled':''}>▼</button>
+      <button class="mini" title="${a.hidden?'Show':'Hide'}" onclick="admHide('${a.id}')">${a.hidden?'👁':'🙈'}</button>
+      <button class="mini" title="Edit details" onclick="admEdit('${a.id}')">✎</button>
+      <button class="mini" title="Upload new version" onclick="admReplace('${a.id}')">⇪</button>
+      <button class="mini del" title="Delete" onclick="admDelete('${a.id}')">🗑</button></div></td></tr>`).join('');
+  const dr=dataRepo();
+  p.innerHTML=`<div class="wrap">
+    <div class="card" style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      ${admin.avatar?`<img src="${esc(admin.avatar)}" style="width:44px;height:44px;border-radius:50%">`:'<div class="uav" style="width:44px;height:44px;font-size:14px">GH</div>'}
+      <div style="flex:1;min-width:220px"><div style="font-weight:600">🐙 ${esc(admin.name||admin.login||admin.owner)} ${admin.login?'<span class="mono">@'+esc(admin.login)+'</span>':''}</div>
+        <div class="note">Portal: <a target="_blank" href="https://github.com/${esc(admin.owner)}/${esc(admin.repo)}">${esc(admin.owner)}/${esc(admin.repo)}</a> · Data: ${config.data.repo?`<a target="_blank" href="https://github.com/${esc(config.data.owner)}/${esc(config.data.repo)}">${esc(config.data.owner)}/${esc(config.data.repo)}</a>`:'not set'} · Website: <a target="_blank" href="https://${esc(admin.owner)}.github.io/${esc(admin.repo)}/">${esc(admin.owner)}.github.io/${esc(admin.repo)}</a></div>
+        <div class="note">Every change is committed to your GitHub account. The website updates about a minute after GitHub Pages rebuilds.</div></div>
+      <div style="display:flex;gap:6px"><button class="btn ghost sm" onclick="wz.token=admin.token;wz.me=null;wz.step=1;wz.done=false;admin=null;renderAdmin()">Run setup again</button><button class="btn ghost sm" onclick="adminDisconnect()">Disconnect</button></div></div>
+    ${addFormHtml('a','➕ Upload & Publish an App','Commits the file to apps/ and registers it in portal-config.json.','admAdd()','🚀 Publish to GitHub')}
+    <div class="card"><div class="card-h"><div><div class="card-t">🗂️ Published Apps (${config.apps.length})</div><div class="card-s">Reorder, hide, edit details, upload a new version, or delete.</div></div><button class="btn ghost sm" onclick="admReload()">↻ Reload from GitHub</button></div>
+      ${config.apps.length?`<div class="tbl-wrap"><table class="tbl"><thead><tr><th></th><th>App</th><th>Category</th><th>File</th><th>Version</th><th>Status</th><th style="text-align:right">Actions</th></tr></thead><tbody>${rows}</tbody></table></div>`:'<div class="note">No apps published yet.</div>'}</div>
+    <div class="card"><div class="card-h"><div><div class="card-t">📥 Library Submissions</div><div class="card-s">Tools users submitted from their libraries for publishing</div></div><button class="btn ghost sm" onclick="renderSubs()">↻ Refresh</button></div><div id="subsBox"><div class="note">${dr?'Loading…':'Set up Data Storage below first.'}</div></div></div>
+    <div class="card"><div class="card-h"><div><div class="card-t">🛠️ Portal Settings</div><div class="card-s">Saved to portal-config.json</div></div></div>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr">
+        <div class="fg"><label>Portal Title</label><input class="inp" id="sTitle" value="${esc(config.portalTitle)}"></div>
+        <div class="fg"><label>Subtitle</label><input class="inp" id="sSub" value="${esc(config.portalSubtitle)}"></div>
+        <div class="fg full"><label>Allowed email domains (comma separated)</label><input class="inp" id="sDom" value="${esc(config.allowedDomains.join(', '))}"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:14px"><button class="btn" onclick="admSaveSettings()">💾 Publish Settings</button></div></div>
+    <div class="card"><div class="card-h"><div><div class="card-t">🗄️ Data Storage — Analytics & Libraries</div><div class="card-s">A separate <b>private</b> repository that stores visit logs, user libraries and submissions</div></div><span class="tag ${dr?'green':'red'}">${dr?'Connected':'Not set up'}</span></div>
+      <div class="warn-box">Every user's browser writes visit logs here, so this token has to be included in the public website (scrambled so GitHub doesn't auto-revoke it). Someone determined could pull it out of the page. Keep the risk small: give the token access to <b>this data repository only</b> with <b>Contents: Read and write</b>, and never reuse your admin token.</div>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr 110px">
+        <div class="fg"><label>Owner</label><input class="inp" id="dOwner" value="${esc(config.data.owner||admin.owner)}"></div>
+        <div class="fg"><label>Private repository</label><input class="inp" id="dRepo" value="${esc(config.data.repo||'ai-portal-data')}"></div>
+        <div class="fg"><label>Branch</label><input class="inp" id="dBranch" value="${esc(config.data.branch||'main')}"></div>
+        <div class="fg full"><label>Data token ${config.data.key?'(leave blank to keep the current one)':''}</label><input class="inp" id="dToken" type="password" placeholder="github_pat_… (data repository only)"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px"><button class="btn ghost" onclick="admTestData()">Test connection</button><button class="btn" onclick="admSaveData()">💾 Publish Data Settings</button></div></div>
+  </div>`;
+  wireDrop('a');if(dr)renderSubs();
+}
+async function admReload(){busy(true,'Reloading…');try{const c=await readFile(adminRepo(),'portal-config.json');if(c)config=normalize(JSON.parse(c));renderAdmin();renderNav();}catch(e){toast(e.message,true);}finally{busy(false);}}
+async function run(label,fn,ok){busy(true,label);try{await fn();toast(ok);renderAdmin();renderNav();}catch(e){toast('Failed: '+e.message,true);}finally{busy(false);}}
+async function admAdd(){
+  const f=readAddForm('a');if(!f)return;const buf=await f.file.arrayBuffer();
+  let file;
+  await run('Publishing "'+f.name+'" to GitHub…',()=>publish(`Publish app: ${f.name}`,c=>{
+    const used=new Set(c.apps.map(a=>a.file));const b=slug(f.name);file=b+'.html';let i=2;while(used.has(file)){file=b+'-'+i+'.html';i++;}
+    c.apps.push({id:'app-'+uid(),name:f.name,icon:f.icon,category:f.category,description:f.description,file,v:1,hidden:false,addedAt:new Date().toISOString(),updatedAt:new Date().toISOString(),addedBy:user});
+    return [{path:'apps/'+file,content:buf}];
+  }),'Published "'+f.name+'". It goes live in about a minute.');
+}
+function admMove(i,dir){const id=config.apps[i].id;run('Saving order…',()=>publish('Reorder apps',c=>{const k=c.apps.findIndex(a=>a.id===id),j=k+dir;if(k<0||j<0||j>=c.apps.length)return;[c.apps[k],c.apps[j]]=[c.apps[j],c.apps[k]];}),'Order saved');}
+function admHide(id){run('Saving…',()=>publish('Toggle app visibility',c=>{const a=c.apps.find(x=>x.id===id);if(a)a.hidden=!a.hidden;}),'Saved');}
+function admEdit(id){editModal(config.apps.find(a=>a.id===id),`admSaveEdit('${id}')`);}
+function admSaveEdit(id){const v=readEditModal();closeModal();run('Saving…',()=>publish(`Edit app: ${v.name}`,c=>{const a=c.apps.find(x=>x.id===id);if(a){Object.assign(a,v);a.updatedAt=new Date().toISOString();}}),'Saved');}
+function admReplace(id){pickFile(async f=>{const buf=await f.arrayBuffer();const a=config.apps.find(x=>x.id===id);
+  run('Uploading new version of "'+a.name+'"…',()=>publish(`Update app: ${a.name}`,c=>{const x=c.apps.find(y=>y.id===id);x.v=(x.v||1)+1;x.updatedAt=new Date().toISOString();return [{path:'apps/'+x.file,content:buf}];}).then(()=>closeFrame(id)),'New version published');});}
+function admDelete(id){const a=config.apps.find(x=>x.id===id);
+  openModal(`<h3>Delete "${esc(a.name)}"?</h3><div class="msg">Removes it from the portal and deletes <span class="mono">apps/${esc(a.file)}</span> from the repository. Git history still keeps a copy.</div><div class="modal-foot"><button class="btn ghost" onclick="closeModal()">Cancel</button><button class="btn danger" onclick="admDeleteGo('${id}')">🗑 Delete</button></div>`);}
+function admDeleteGo(id){closeModal();closeFrame(id);run('Deleting…',()=>publish('Delete app',c=>{const a=c.apps.find(x=>x.id===id);c.apps=c.apps.filter(x=>x.id!==id);return a?[{path:'apps/'+a.file,content:null}]:[];}),'Deleted');}
+function admSaveSettings(){
+  const doms=$('sDom').value.split(',').map(s=>s.trim().replace(/^@/,'').toLowerCase()).filter(Boolean);
+  if(!doms.length)return toast('Enter at least one email domain',true);
+  run('Publishing settings…',()=>publish('Update portal settings',c=>{c.portalTitle=$('sTitle').value.trim()||'AI Portal';c.portalSubtitle=$('sSub').value.trim();c.allowedDomains=doms;}),'Settings published');
+}
+function dataForm(){const t=$('dToken').value.trim();return {owner:$('dOwner').value.trim(),repo:$('dRepo').value.trim(),branch:$('dBranch').value.trim()||'main',token:t||deobf(config.data.key)};}
+async function admTestData(){
+  const R=dataForm();if(!R.owner||!R.repo||!R.token)return toast('Fill in the data repository and token',true);
+  busy(true,'Testing…');
+  try{const r=await gh(R.token,`/repos/${R.owner}/${R.repo}`);if(!r.private)toast('Warning: the data repository is PUBLIC. Make it private.',true);else if(!(r.permissions&&r.permissions.push))throw new Error('token cannot write');else toast('Data repository OK ✓');}
+  catch(e){toast('Test failed: '+e.message,true);}finally{busy(false);}
+}
+function admSaveData(){
+  const R=dataForm();if(!R.owner||!R.repo||!R.token)return toast('Fill in the data repository and token',true);
+  if(R.token===admin.token)return toast('Use a separate token for data, not your admin token',true);
+  run('Publishing data settings…',()=>publish('Update data storage settings',c=>{c.data={owner:R.owner,repo:R.repo,branch:R.branch,key:obf(R.token)};}),'Data storage connected');
+  lib=null;anaCache=null;
+}
+async function renderSubs(){
+  const box=$('subsBox');const R=dataRepo();if(!box||!R)return;
+  try{
+    const t=await readFile(R,'submissions.json');const subs=(t?JSON.parse(t):[]).sort((a,b)=>(a.status==='submitted'?0:1)-(b.status==='submitted'?0:1)||(b.submittedAt>a.submittedAt?1:-1));
+    if(!subs.length){box.innerHTML='<div class="note">No submissions yet. Users submit tools from My Library using 🚀.</div>';return;}
+    const st={submitted:'<span class="tag amber">Pending</span>',published:'<span class="tag green">Published</span>',rejected:'<span class="tag red">Rejected</span>'};
+    box.innerHTML=`<div class="tbl-wrap"><table class="tbl"><thead><tr><th></th><th>Tool</th><th>Submitted by</th><th>Note</th><th>Date</th><th>Status</th><th style="text-align:right">Actions</th></tr></thead><tbody>${subs.map(s=>`<tr>
+      <td style="font-size:18px">${esc(s.icon||'📄')}</td><td><b>${esc(s.name)}</b><div style="font-size:11px;color:#999">${esc(s.description||'')} · ${fmtSize(s.size)}</div></td>
+      <td>${esc(s.email)}</td><td style="font-size:11px;color:#666;max-width:220px">${esc(s.note||'—')}</td><td class="mono">${fmtDate(s.submittedAt)}</td><td>${st[s.status]||''}</td>
+      <td><div class="row-actions">${s.status==='submitted'?`<button class="btn ghost sm" onclick="subPreview('${s.id}')">Preview</button><button class="btn green sm" onclick="subPublish('${s.id}')">Publish</button><button class="btn danger sm" onclick="subReject('${s.id}')">Reject</button>`:''}</div></td></tr>`).join('')}</tbody></table></div>`;
+    window._subs=subs;
+  }catch(e){box.innerHTML=`<div class="warn-box">Could not load submissions: ${esc(e.message)}</div>`;}
+}
+async function subPreview(id){const s=window._subs.find(x=>x.id===id);busy(true,'Opening preview…');try{const buf=await readFile(dataRepo(),s.path,null,true);window.open(URL.createObjectURL(new Blob([buf],{type:'text/html'})),'_blank');}catch(e){toast(e.message,true);}finally{busy(false);}}
+async function markSub(id,status){
+  const R=dataRepo();const s=window._subs.find(x=>x.id===id);const ldir=s.path.split('/files/')[0];
+  await commit(R,`submission ${status}: ${s.name}`,async read=>{
+    const subs=JSON.parse(await read('submissions.json')||'[]');const x=subs.find(y=>y.id===id);if(x){x.status=status;x.reviewedAt=new Date().toISOString();x.reviewedBy=user;}
+    const out=[{path:'submissions.json',content:JSON.stringify(subs,null,2)}];
+    const lt=await read(ldir+'/library.json');if(lt){const l=JSON.parse(lt);const it=l.items.find(i=>i.id===s.libId);if(it){it.status=status;out.push({path:ldir+'/library.json',content:JSON.stringify(l,null,2)});}}
+    return out;
+  });
+}
+function subPublish(id){
+  const s=window._subs.find(x=>x.id===id);
+  run('Publishing "'+s.name+'" to the portal…',async()=>{
+    const buf=await readFile(dataRepo(),s.path,null,true);if(!buf)throw new Error('submitted file not found');
+    await publish(`Publish submitted tool: ${s.name} (by ${s.email})`,c=>{
+      const used=new Set(c.apps.map(a=>a.file));const b=slug(s.name);let file=b+'.html',i=2;while(used.has(file)){file=b+'-'+i+'.html';i++;}
+      c.apps.push({id:'app-'+uid(),name:s.name,icon:s.icon||'📄',category:s.category||'General',description:s.description||'',file,v:1,hidden:false,addedAt:new Date().toISOString(),updatedAt:new Date().toISOString(),addedBy:s.email});
+      return [{path:'apps/'+file,content:buf}];
+    });
+    await markSub(id,'published');if(user===s.email)lib=null;
+  },'"'+s.name+'" published. It goes live in about a minute.');
+}
+function subReject(id){run('Saving…',()=>markSub(id,'rejected'),'Submission rejected');}
+
+/* ── Modal ── */
+function openModal(h){$('modalBox').innerHTML=h;$('modal').classList.add('show');}
+function closeModal(){$('modal').classList.remove('show');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+boot();
+</script>
+</body>
+</html>
